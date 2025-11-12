@@ -2,3 +2,44 @@
 {
     display:block;
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes scroll-up {
+  0% { 
+    transform: translateY(0); 
+  }
+  100% { 
+    transform: translateY(-50%); 
+  }
+}
+
+@keyframes scroll-down {
+  0% { 
+    transform: translateY(0); 
+  }
+  100% { 
+    transform: translateY(50%); 
+  }
+}
+
+.animate-scroll-up {
+  animation: scroll-up 70s linear infinite;
+  padding-top: 50%;
+  margin-top: -50%;
+}
+
+.animate-scroll-down {
+  animation: scroll-down 70s linear infinite;
+  padding-bottom: 50%;
+  margin-bottom: -50%;
+}
+
+/* Add smooth animation */
+.animate-scroll-up, .animate-scroll-down {
+  animation-iteration-count: infinite;
+  animation-play-state: running;
+  will-change: transform;
+}

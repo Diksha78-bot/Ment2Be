@@ -5,6 +5,7 @@ import {Routes,Route} from 'react-router-dom'
 import './index.css'
 import Home from './pages/Home'
 import RoomPage from './pages/RoomPage'
+import Login from './pages/Login';
 
 function App() {
   const [count, setCount] = useState(0)
@@ -12,7 +13,8 @@ function App() {
   return (
     <>
        <Routes>
-        <Route path='/' element={<Home/>}></Route>
+        <Route path='/' element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/room/:roomId"  element={<RoomPage/>}></Route>
        </Routes>
     </>
