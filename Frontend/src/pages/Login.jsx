@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { authAPI } from '../services/api';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
 import ProfileCarousel from '../components/auth/ProfileCarousel';
+import LoadingScreen from '../components/LoadingScreen';
+
+const API_URL = "http://localhost:4000/api";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -11,94 +13,147 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerRole, setRegisterRole] = useState('student');
+  const [showLoading, setShowLoading] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
-    if (authAPI.isAuthenticated()) {
-      navigate('/');
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+
+    if (token && user) {
+      const parsedUser = JSON.parse(user);
+
+      if (parsedUser.role === "mentor") {
+        navigate("/mentor/dashboard");
+      } else {
+        navigate("/student/dashboard");
+      }
     }
-    
-    // Check if coming from register link
-    if (location.pathname === '/register' && location.state?.role) {
+
+    // If came from "Register as Mentor/Student"
+    if (location.pathname === "/register" && location.state?.role) {
       setIsRegistering(true);
       setRegisterRole(location.state.role);
     }
   }, [navigate, location]);
 
+  // --------------------------
+  // SIMPLE LOGIN FETCH HANDLER
+  // --------------------------
   const handleLogin = async (formData) => {
     try {
       setError('');
-      const response = await authAPI.login({
-        email: formData.email,
-        password: formData.password
+      setShowLoading(true);
+
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
       });
 
-      if (!response || !response.token) {
-        throw new Error('Invalid response from server');
+      const data = await res.json();
+      if (!res.ok) {
+        setShowLoading(false);
+        throw new Error(data.message || "Login failed");
       }
 
-      // Store token and user data
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response));
+      // Save user + token
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data));
 
-      // Redirect to home or intended page
-      const redirectTo = location.state?.from?.pathname || '/';
-      navigate(redirectTo);
+      // Keep loading screen for 2 seconds then redirect
+      setTimeout(() => {
+        if (data.role === "mentor") {
+          navigate("/mentor/dashboard");
+        } else {
+          navigate("/student/dashboard");
+        }
+      }, 2000);
+
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.response?.data?.message || err.message || 'Login failed. Please check your credentials.');
+      setShowLoading(false);
+      setError(err.message);
     }
   };
 
+  // ------------------------------
+  // SIMPLE REGISTER FETCH HANDLER
+  // ------------------------------
   const handleRegister = async (formData) => {
     try {
       setError('');
-      const response = await authAPI.register({
-        ...formData,
-        role: registerRole
+      setShowLoading(true);
+
+      const res = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          role: registerRole
+        })
       });
 
+      const data = await res.json();
+      if (!res.ok) {
+        setShowLoading(false);
+        throw new Error(data.message || "Registration failed");
+      }
+
       // Auto-login after registration
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      
-      navigate('/');
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data));
+
+      // Keep loading screen for 2 seconds then redirect
+      setTimeout(() => {
+        if (registerRole === "mentor") {
+          navigate("/mentor/dashboard");
+        } else {
+          navigate("/student/dashboard");
+        }
+      }, 2000);
+
     } catch (err) {
-      console.error('Registration error:', err);
-      setError(err.message || 'Registration failed. Please try again.');
+      setShowLoading(false);
+      setError(err.message);
     }
   };
 
   const handleNavigateToRegister = (role) => {
     setIsRegistering(true);
     setRegisterRole(role);
-    // Update URL without triggering a full page reload
-    window.history.pushState({}, '', `/register`);
+    window.history.pushState({}, "", "/register");
   };
 
   const handleSwitchToLogin = () => {
     setIsRegistering(false);
-    window.history.pushState({}, '', '/login');
+    window.history.pushState({}, "", "/login");
   };
+
+  // Show loading screen only when logging in
+  if (showLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="h-screen flex flex-col lg:flex-row bg-gradient-to-br from-gray-100 to-gray-300">
-      {/* Left Side - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 lg:p-8">
         <div className="w-full max-w-md">
           {isRegistering ? (
-            <RegisterForm 
+            <RegisterForm
               onSubmit={handleRegister}
               onSwitchToLogin={handleSwitchToLogin}
               role={registerRole}
             />
           ) : (
-            <LoginForm 
+            <LoginForm
               onSubmit={handleLogin}
               onNavigateToRegister={handleNavigateToRegister}
             />
           )}
-          
+
           {error && (
             <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
               {error}
