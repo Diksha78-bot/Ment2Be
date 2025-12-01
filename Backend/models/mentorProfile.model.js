@@ -68,6 +68,11 @@ const mentorProfileSchema = new mongoose.Schema(
         }]
       }],
       default: []
+    },
+    profilePicture: {
+      type: String,
+      trim: true,
+      default: null
     }
   },
   { 

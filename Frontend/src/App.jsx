@@ -15,6 +15,7 @@ import MentorMessagesPage from './pages/MentorMessagesPage';
 import MentorGetMenteesPage from './pages/MentorGetMenteesPage';
 import MentorProfilePage from './pages/MentorProfilePage';
 import MentorProfileSetup from './pages/MentorProfileSetup';
+import MentorDetailPage from './pages/MentorDetailPage';
 import NotFoundPage from './assets/NotFoundPage';
 import LoadingBar from './components/Common/LoadingBar';
 
@@ -50,6 +51,7 @@ function App() {
         <Route path="/student/chat" element={<ChatPage />} />
         <Route path="/student/sessions" element={<SessionsPage />} />
         <Route path="/student/profile" element={<ProfilePage />} />
+        <Route path="/mentor-profile" element={<MentorDetailPage />} />
 
         {/* Mentor Routes */}
         <Route path="/mentor/dashboard" element={<MentorDashboard />} />

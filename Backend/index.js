@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { env } from './config/env.js';
+// import { env } from './config/env.js';
 import connectDB from './config/db.js';
 import authRouter from './routes/auth.routes.js';
 import userRouter from './routes/user.routes.js';
@@ -10,11 +10,18 @@ import paymentsRouter from './routes/payments.routes.js';
 import reviewsRouter from './routes/reviews.routes.js';
 import mentorRouter from './routes/mentor.routes.js';
 
+import dotenv from "dotenv"
+
+dotenv.config()
+
 const app = express();
-const PORT = env.PORT;
-const NODE_ENV = env.NODE_ENV;
+const PORT = process.env.PORT || 4000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  next();
+});
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -55,10 +62,12 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/mentors', mentorRouter);
+
 app.use('/api/skills', skillsRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/reviews', reviewsRouter);
+
 
 app.use((req, res) => {
   res.status(404).json({
@@ -115,7 +124,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal server error',
-    ...(env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
 

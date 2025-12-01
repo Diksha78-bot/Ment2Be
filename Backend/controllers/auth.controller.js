@@ -1,13 +1,18 @@
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { env } from "../config/env.js";
+import { OAuth2Client } from 'google-auth-library';
 
+const client = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  'http://localhost:5173'
+);
 
 const generateToken = (id, role) => {
   return jwt.sign(
     { id, role },
-    env.JWT_SECRET,
+    process.env.JWT_SECRET,
     { expiresIn: '30d' }
   );
 };
@@ -34,6 +39,8 @@ export async function Register(req, res) {
     });
 
     if (user) {      
+      const token = generateToken(user._id, user.role);
+      
       res.status(201).json({
         success: true,
         _id: user._id,
@@ -42,6 +49,7 @@ export async function Register(req, res) {
         role: user.role,
         bio: user.bio,
         ...(user.hourlyRate && { hourlyRate: user.hourlyRate }),
+        token
       });
     } else {
       res.status(400).json({
@@ -54,7 +62,7 @@ export async function Register(req, res) {
     res.status(500).json({
       success: false,
       message: "Server error during registration",
-      error: env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }
@@ -75,11 +83,10 @@ export async function Login(req, res) {
       return res.status(401).json({"success":false,"message":"Invalid email or password"});
     }
 
-    if (typeof user.password !== 'string' || user.password.length === 0) {
-      console.error("Password hash not returned for user:", user._id);
-      return res.status(500).json({"success":false,"message":"Server misconfiguration: password not retrievable"});
+    if (!user.password) {
+      console.log("User has no password (Google OAuth user):", user._id);
+      return res.status(401).json({"success":false,"message":"Please use Google Sign In for this account"});
     }
-
 
     const isMatch = await bcrypt.compare(password, user.password);
 
@@ -97,7 +104,64 @@ export async function Login(req, res) {
     });
   } catch (error) {
     console.error("Login error:", error);
-    return res.status(500).json({"success":false,"message":"Server error during login", "error": env.NODE_ENV === 'development' ? error.message : undefined});
+    return res.status(500).json({"success":false,"message":"Server error during login", "error": process.env.NODE_ENV === 'development' ? error.message : undefined});
+  }
+}
+
+export async function GoogleLogin(req, res) {
+  try {
+    const { code, role } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ success: false, message: "Google code is required" });
+    }
+
+    const { tokens } = await client.getToken(code);
+    const idToken = tokens.id_token;
+
+    const ticket = await client.verifyIdToken({
+      idToken: idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const { name, email, sub: googleId } = ticket.getPayload();
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // Link Google ID if not present
+      if (!user.googleId) {
+        user.googleId = googleId;
+        await user.save();
+      }
+    } else {
+      // Create new user
+      const userRole = role || 'student';
+      
+      user = await User.create({
+        name,
+        email,
+        googleId,
+        role: userRole,
+      });
+    }
+
+    const jwtToken = generateToken(user._id, user.role);
+    const userData = user.toObject();
+    delete userData.password;
+
+    res.status(200).json({
+      success: true,
+      ...userData,
+      token: jwtToken
+    });
+  } catch (error) {
+    console.error("Google Login error:", error);
+    res.status(401).json({
+      success: false,
+      message: "Google authentication failed",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 }
 

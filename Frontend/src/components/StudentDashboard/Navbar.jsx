@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Home, Compass, BookOpen, MessageCircle, Clock, MoreHorizontal, Menu, X } from 'lucide-react';
+import { Home, Compass, BookOpen, MessageCircle, Clock, MoreHorizontal, Menu, X, LogOut } from 'lucide-react';
 import UserProfileSidebar from '../UserProfileSidebar';
 
 const Navbar = ({ userName = 'Student' }) => {

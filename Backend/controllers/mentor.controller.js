@@ -1,3 +1,4 @@
+import cloudinary from '../config/cloudinary.js';
 import User from "../models/user.model.js";
 import MentorSkill from "../models/mentorSkills.model.js";
 import Session from "../models/Session.model.js";
@@ -6,6 +7,14 @@ import MentorProfile from "../models/mentorProfile.model.js";
 
 export async function CreateOrUpdateMentorProfile(req, res) {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
     const {
       headline,
       bio,
@@ -17,7 +26,7 @@ export async function CreateOrUpdateMentorProfile(req, res) {
       skills,
       isProfileComplete = true
     } = req.body;
-    const userId = req.user.id; // Assuming you have authentication middleware that adds user to req
+    const userId = req.user.id;
 
     let normalizedSkills;
     if (Array.isArray(skills)) {
@@ -155,15 +164,325 @@ export async function GetAllMentors(req, res) {
   }
 }
 
-// Keep other functions as they are
 export async function GetMentorById(req, res) {
-  // ... existing code
+  try {
+    const { id } = req.params;
+
+    // Find mentor profile with user details
+    const profile = await MentorProfile.findOne({ user: id })
+      .populate('user', 'name email role createdAt');
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Mentor profile not found'
+      });
+    }
+
+    // Get completed sessions for this mentor
+    const sessions = await Session.find({ 
+      mentor: id, 
+      status: 'completed' 
+    }).select('_id');
+    
+    const sessionIds = sessions.map(s => s._id);
+
+    // Calculate average rating
+    let averageRating = 0;
+    let totalReviews = 0;
+
+    if (sessionIds.length > 0) {
+      const reviews = await Review.find({ session: { $in: sessionIds } });
+      totalReviews = reviews.length;
+      const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+      averageRating = totalReviews ? Number((totalRating / totalReviews).toFixed(2)) : 0;
+    }
+
+    // Prepare response
+    const mentorData = {
+      _id: profile.user._id,
+      name: profile.user.name,
+      email: profile.user.email,
+      role: profile.user.role,
+      headline: profile.headline,
+      company: profile.company,
+      experience: profile.experience,
+      bio: profile.bio,
+      hourlyRate: profile.hourlyRate,
+      profilePicture: profile.profilePicture || null,
+      skills: profile.skills,
+      linkedinProfile: profile.linkedinProfile,
+      githubProfile: profile.githubProfile,
+      averageRating,
+      totalReviews,
+      isOnline: false,
+      createdAt: profile.user.createdAt
+    };
+
+    res.status(200).json({
+      success: true,
+      mentor: mentorData
+    });
+  } catch (error) {
+    console.error('Get mentor by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch mentor details',
+      error: error.message
+    });
+  }
 }
 
 export async function GetMentorsBySkill(req, res) {
-  // ... existing code
+  try {
+    const { skillId } = req.params;
+    
+    // Find all mentor profiles that have the specified skill
+    const profiles = await MentorProfile.find({
+      skills: { $in: [skillId] },
+      isProfileComplete: true
+    }).populate('user', 'name email role');
+
+    if (!profiles || profiles.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No mentors found with the specified skill'
+      });
+    }
+
+    // Get mentor details with ratings
+    const mentors = await Promise.all(
+      profiles.map(async (profile) => {
+        const mentorId = profile.user?._id;
+        
+        // Get completed sessions for rating calculation
+        const sessions = await Session.find({ 
+          mentor: mentorId, 
+          status: 'completed' 
+        }).select('_id');
+        
+        const sessionIds = sessions.map(s => s._id);
+        let averageRating = 0;
+        let totalReviews = 0;
+
+        if (sessionIds.length > 0) {
+          const reviews = await Review.find({ session: { $in: sessionIds } });
+          totalReviews = reviews.length;
+          const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+          averageRating = totalReviews ? Number((totalRating / totalReviews).toFixed(2)) : 0;
+        }
+
+        return {
+          _id: mentorId,
+          name: profile.user?.name,
+          email: profile.user?.email,
+          role: profile.user?.role,
+          headline: profile.headline,
+          company: profile.company,
+          experience: profile.experience,
+          hourlyRate: profile.hourlyRate,
+          profilePicture: profile.profilePicture || null,
+          skills: profile.skills,
+          averageRating,
+          totalReviews,
+          isOnline: false
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      count: mentors.length,
+      mentors
+    });
+  } catch (error) {
+    console.error('Get mentors by skill error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch mentors by skill',
+      error: error.message
+    });
+  }
+}
+
+export async function UploadMentorPhoto(req, res) {
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please upload a file'
+      });
+    }
+
+    // Use the authenticated user's ID for the profile lookup
+    const userId = req.user.id;
+
+    // Find the mentor profile for the authenticated user
+    const mentorProfile = await MentorProfile.findOne({ user: userId })
+      .populate('user', 'id role');
+      
+    if (!mentorProfile) {
+      console.log('Mentor profile not found for user ID:', userId);
+      return res.status(404).json({
+        success: false,
+        message: 'Mentor profile not found. Please complete your mentor profile first.'
+      });
+    }
+
+    // Since we're using the authenticated user's ID, they are always the owner
+    // No additional authorization check needed
+
+    // Convert buffer to base64 for Cloudinary
+    const base64String = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(base64String, {
+      folder: 'mentor-profiles',
+      width: 500,
+      height: 500,
+      crop: 'fill',
+      quality: 'auto',
+      fetch_format: 'auto'
+    });
+
+    // Update mentor's profile with the new photo URL
+    const updatedProfile = await MentorProfile.findOneAndUpdate(
+      { user: userId },
+      { profilePicture: result.secure_url },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Mentor profile not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile photo uploaded successfully',
+      photoUrl: result.secure_url,
+      profile: updatedProfile
+    });
+
+  } catch (error) {
+    console.error('Upload mentor photo error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading profile photo',
+      error: error.message
+    });
+  }
+}
+
+export async function RemoveMentorPhoto(req, res) {
+  try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    // Use the authenticated user's ID for the profile lookup
+    const userId = req.user.id;
+
+    // Find and update the mentor profile to remove the photo
+    const updatedProfile = await MentorProfile.findOneAndUpdate(
+      { user: userId },
+      { profilePicture: null },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Mentor profile not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile photo removed successfully',
+      profile: updatedProfile
+    });
+
+  } catch (error) {
+    console.error('Remove mentor photo error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error removing profile photo',
+      error: error.message
+    });
+  }
 }
 
 export async function GetCarouselMentors(req, res) {
-  // ... existing code
+  try {
+    // Get top 6 mentors with highest ratings
+    const profiles = await MentorProfile.find({ isProfileComplete: true })
+      .populate('user', 'name email role')
+      .limit(6);
+
+    // Get mentor details with ratings
+    const mentors = await Promise.all(
+      profiles.map(async (profile) => {
+        const mentorId = profile.user?._id;
+        
+        // Get completed sessions for rating calculation
+        const sessions = await Session.find({ 
+          mentor: mentorId, 
+          status: 'completed' 
+        }).select('_id');
+        
+        const sessionIds = sessions.map(s => s._id);
+        let averageRating = 0;
+        let totalReviews = 0;
+
+        if (sessionIds.length > 0) {
+          const reviews = await Review.find({ session: { $in: sessionIds } });
+          totalReviews = reviews.length;
+          const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+          averageRating = totalReviews ? Number((totalRating / totalReviews).toFixed(2)) : 0;
+        }
+
+        return {
+          _id: mentorId,
+          name: profile.user?.name,
+          headline: profile.headline,
+          company: profile.company,
+          profilePicture: profile.profilePicture || null,
+          skills: profile.skills.slice(0, 3), // Only show top 3 skills in carousel
+          averageRating,
+          totalReviews
+        };
+      })
+    );
+
+    // Sort by average rating in descending order
+    mentors.sort((a, b) => b.averageRating - a.averageRating);
+
+    res.status(200).json({
+      success: true,
+      mentors
+    });
+  } catch (error) {
+    console.error('Get carousel mentors error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch featured mentors',
+      error: error.message
+    });
+  }
 }

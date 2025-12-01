@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Users, CheckSquare, MessageCircle, UserPlus, Menu, X, Home } from 'lucide-react';
+import { Users, CheckSquare, MessageCircle, UserPlus, Menu, X, Home, LogOut } from 'lucide-react';
 import UserProfileSidebar from '../UserProfileSidebar';
 
 const MentorNavbar = ({ userName = 'Mentor' }) => {

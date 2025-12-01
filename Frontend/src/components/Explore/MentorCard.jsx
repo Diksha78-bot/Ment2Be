@@ -1,9 +1,19 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiStar, FiClock, FiMessageSquare } from 'react-icons/fi';
 
 const MentorCard = ({ mentor }) => {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/mentor-profile?mentor=${encodeURIComponent(mentor.name)}`);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+    <div 
+      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="p-6">
         <div className="flex items-start">
           {/* Mentor Image */}

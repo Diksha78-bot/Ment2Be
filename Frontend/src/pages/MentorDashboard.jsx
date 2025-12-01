@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import MentorNavbar from "../components/MentorDashboard/Navbar";
+import { FiUpload, FiX } from "react-icons/fi";
 
 const MentorDashboard = () => {
   const navigate = useNavigate();
@@ -24,7 +25,10 @@ const MentorDashboard = () => {
   const [socialSaving, setSocialSaving] = useState(false);
   const [showFullBio, setShowFullBio] = useState(false);
   const [isBioTruncated, setIsBioTruncated] = useState(false);
-  const bioRef = React.useRef(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const fileInputRef = useRef(null);
+  const bioRef = useRef(null);
 
   const PRESET_SKILLS = [
     "System Design",
@@ -268,6 +272,107 @@ const MentorDashboard = () => {
     }
   };
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check if we have a valid mentor ID
+    if (!mentorProfile?._id) {
+      setUploadError('Please save your profile before uploading a photo');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please upload an image file (JPEG, PNG, etc.)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('File size should be less than 5MB');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('profilePhoto', file);
+    
+    try {
+      setIsUploading(true);
+      setUploadError(null);
+      
+      const response = await fetch(`http://localhost:4000/api/mentors/upload-photo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to upload photo. Please try again.');
+      }
+
+      const result = await response.json();
+      console.log('Upload response:', result);
+      
+      // Update the profile with the new photo URL
+      if (result.photoUrl) {
+        console.log('Setting profilePicture to:', result.photoUrl);
+        setMentorProfile(prev => {
+          const updated = {
+            ...prev,
+            profilePicture: result.photoUrl
+          };
+          console.log('Updated mentorProfile:', updated);
+          return updated;
+        });
+      }
+      
+    } catch (error) {
+      console.error('Photo upload failed:', error);
+      setUploadError(error.message || 'Failed to upload photo. Please try again.');
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!mentorProfile?._id) {
+      setUploadError('Unable to remove photo: No mentor profile found');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:4000/api/mentors/upload-photo`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove photo');
+      }
+
+      // Update the profile to remove the photo
+      setMentorProfile(prev => ({
+        ...prev,
+        profilePicture: null
+      }));
+      
+    } catch (error) {
+      console.error('Failed to remove photo:', error);
+      setUploadError('Failed to remove photo. Please try again.');
+    }
+  };
+
   if (loading)
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -305,11 +410,57 @@ const MentorDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* LEFT PROFILE CARD */}
           <aside className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center text-center space-y-4">
-            <div className="relative">
-              <div className="h-32 w-32 rounded-full bg-gray-100 flex items-center justify-center text-3xl font-semibold text-gray-600">
-                {initials || ""}
+            <div className="relative group">
+              <div className="relative h-32 w-32 rounded-full bg-gray-100 overflow-hidden">
+                {console.log('Current mentorProfile:', mentorProfile)}
+                {mentorProfile?.profilePicture ? (
+                  <>
+                    <img 
+                      src={mentorProfile.profilePicture} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={handleRemovePhoto}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove photo"
+                    >
+                      <FiX size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-3xl font-semibold text-gray-600">
+                    {initials || ""}
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <label 
+                    className="bg-white bg-opacity-80 p-2 rounded-full cursor-pointer hover:bg-opacity-100 transition-all"
+                    title="Upload photo"
+                  >
+                    <FiUpload className="text-gray-700" />
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploading}
+                    />
+                  </label>
+                </div>
               </div>
               <span className="absolute bottom-3 right-3 h-4 w-4 rounded-full bg-green-500 border-2 border-white" />
+              {isUploading && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                </div>
+              )}
+              {uploadError && (
+                <div className="absolute -bottom-6 left-0 right-0 text-center text-red-500 text-xs">
+                  {uploadError}
+                </div>
+              )}
             </div>
 
             <div>
