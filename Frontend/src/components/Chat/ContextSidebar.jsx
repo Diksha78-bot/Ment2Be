@@ -1,21 +1,30 @@
 import React from "react";
-import { Target, CheckSquare, Lightbulb, FileText, ExternalLink } from "lucide-react";
+import { Target, CheckSquare, Lightbulb, FileText, ExternalLink, BookOpen, User, Briefcase, Calendar, Clock } from "lucide-react";
 import { MessageTypes } from "../../lib/types";
 import "./chat-scrollbar.css";
 
-const goals = [
-  { id: "1", title: "Complete User Research Module", progress: 75, dueDate: "Dec 15" },
-  { id: "2", title: "Build Product Roadmap", progress: 30, dueDate: "Dec 30" },
-  { id: "3", title: "Present to Stakeholders", progress: 0, dueDate: "Jan 10" },
-];
+const getInitials = (name) => {
+  if (!name || typeof name !== 'string') return 'U';
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+};
 
-const resources = [
-  { id: "1", title: "User Interview Templates", type: "PDF" },
-  { id: "2", title: "JTBD Framework Guide", type: "Link" },
-  { id: "3", title: "PM Career Roadmap", type: "Doc" },
-];
-
-export function ContextSidebar({ messages }) {
+export function ContextSidebar({ messages, mentee }) {
+  // Fallback data in case mentee prop is not provided
+  const {
+    name = 'Mentee',
+    role = 'Mentee',
+    avatar = '',
+    bio = '',
+    sessionCount = 0,
+    totalSessions = 12,
+    goals = [],
+    resources = []
+  } = mentee || {};
   const actionItems = messages.filter((m) => m.type === MessageTypes.ACTION);
   const insights = messages.filter((m) => m.type === MessageTypes.INSIGHT);
 
@@ -32,23 +41,65 @@ export function ContextSidebar({ messages }) {
   );
 
   return (
-    <div className="h-full flex flex-col bg-[#121212]">
+    <div className="h-full flex flex-col bg-[#121212] overflow-y-auto">
       {/* Mentee profile section */}
       <div className="p-6 border-b border-[#535353]/30">
         <div className="flex items-center gap-3 mb-4">
-          <div className="h-10 w-10 border-2 border-gray-600 rounded-full overflow-hidden bg-[#212121] flex items-center justify-center">
-            <span className="text-sm font-semibold text-white">JD</span>
+          <div className="h-14 w-14 border-2 border-gray-600 rounded-full overflow-hidden bg-[#212121] flex items-center justify-center">
+            {avatar ? (
+              <img 
+                src={avatar} 
+                alt={name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.style.display = 'none';
+                  e.target.parentElement.querySelector('span').style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <span className="text-lg font-semibold text-white flex items-center justify-center w-full h-full">
+              {getInitials(name)}
+            </span>
           </div>
           <div>
-            <h3 className="font-medium text-white">James Davis</h3>
-            <p className="text-xs text-[#535353]">Aspiring Product Manager</p>
+            <h3 className="font-medium text-white text-lg">{name}</h3>
+            <p className="text-sm text-[#b3b3b9]">{role}</p>
           </div>
         </div>
-        <div className="flex items-center justify-between text-xs text-[#535353]">
-          <span>Mentorship Progress</span>
-          <span className="text-white font-medium">Session 8 of 12</span>
+        
+        {bio && (
+          <p className="text-sm text-gray-300 mb-4">{bio}</p>
+        )}
+        
+        <div className="space-y-3 text-sm">
+          <div className="flex items-center text-gray-300">
+            <BookOpen className="h-4 w-4 mr-2 text-gray-400" />
+            <span>Session {sessionCount} of {totalSessions}</span>
+          </div>
+          
+          {mentee?.nextSession && (
+            <div className="flex items-center text-gray-300">
+              <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+              <span>
+                Next: {new Date(mentee.nextSession).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
+          )}
         </div>
-        <Progress value={67} className="h-1.5 mt-2 bg-[#212121]" />
+        
+        <div className="mt-4">
+          <div className="flex items-center justify-between text-xs text-[#b3b3b9] mb-1">
+            <span>Mentorship Progress</span>
+            <span className="text-white font-medium">{Math.round((sessionCount / totalSessions) * 100)}%</span>
+          </div>
+          <Progress value={(sessionCount / totalSessions) * 100} className="h-1.5 mt-2 bg-[#212121]" />
+        </div>
       </div>
 
       {/* Scrollable content */}

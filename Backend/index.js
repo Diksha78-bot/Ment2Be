@@ -12,6 +12,7 @@ import paymentsRouter from './routes/payments.routes.js';
 import reviewsRouter from './routes/reviews.routes.js';
 import mentorRouter from './routes/mentor.routes.js';
 import bookingRouter from './routes/booking.routes.js';
+import messageRouter from './routes/message.routes.js';
 import { handleSocketConnection, getRoomCount, getTotalParticipants } from './socket/socketHandlers.js';
 
 import dotenv from "dotenv"
@@ -97,6 +98,7 @@ app.use('/api/skills', skillsRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/reviews', reviewsRouter);
+app.use('/api/messages', messageRouter);
 
 // Initialize Socket.IO handlers
 handleSocketConnection(io);

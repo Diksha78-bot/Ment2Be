@@ -49,7 +49,12 @@ export function ChatList({ conversations, activeConversationId, onSelectConversa
 
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto py-2 chat-scrollbar">
-        {conversations.map((conversation) => (
+        {conversations.length === 0 ? (
+          <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
+            No conversations yet
+          </div>
+        ) : (
+          conversations.map((conversation) => (
           <button
             key={conversation.id}
             onClick={() => onSelectConversation(conversation.id)}
@@ -64,7 +69,15 @@ export function ChatList({ conversations, activeConversationId, onSelectConversa
             {/* Avatar with online indicator */}
             <div className="relative flex-shrink-0">
               <div className="w-12 h-12 rounded-xl bg-[#212121] border border-[#535353]/30 flex items-center justify-center overflow-hidden">
-                <span className="text-lg font-semibold text-white">{conversation.mentorName.charAt(0)}</span>
+                {conversation.mentorAvatar ? (
+                  <img 
+                    src={conversation.mentorAvatar} 
+                    alt={conversation.mentorName} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-lg font-semibold text-white">{conversation.mentorName.charAt(0)}</span>
+                )}
               </div>
               {conversation.isOnline && (
                 <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-gray-400 rounded-full border-2 border-[#121212]" />
@@ -90,20 +103,33 @@ export function ChatList({ conversations, activeConversationId, onSelectConversa
               </div>
             </div>
           </button>
-        ))}
+        )))}
       </div>
 
-      {/* Footer */}
+      {/* Footer - Current User */}
       <div className="p-4 border-t border-[#535353]/30">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-[#212121] border border-[#535353]/30">
-          <div className="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center">
-            <span className="text-sm font-semibold text-white">A</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white">Alex Chen</p>
-            <p className="text-xs text-gray-400">Mentee Account</p>
-          </div>
-        </div>
+        {(() => {
+          try {
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const userInitial = currentUser?.name?.charAt(0) || 'U';
+            const userRole = currentUser?.role === 'mentor' ? 'Mentor Account' : 'Mentee Account';
+            
+            return (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-[#212121] border border-[#535353]/30">
+                <div className="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-white">{userInitial}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{currentUser?.name || 'User'}</p>
+                  <p className="text-xs text-gray-400">{userRole}</p>
+                </div>
+              </div>
+            );
+          } catch (error) {
+            console.error('Error loading user data:', error);
+            return null;
+          }
+        })()}
       </div>
     </div>
   );

@@ -22,6 +22,7 @@ const MentorMessagesPage = () => {
       <div className="h-[calc(100vh-64px)] overflow-hidden"> {/* Subtract navbar height */}
         <MentorshipChat />
       </div>
+      
     </div>
   );
 };

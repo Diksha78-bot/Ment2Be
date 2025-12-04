@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Users, CheckSquare, MessageCircle, UserPlus, Menu, X, Home, LogOut } from 'lucide-react';
 import UserProfileSidebar from '../UserProfileSidebar';
+import Logo from '../../assets/Logo.png';
 
 const MentorNavbar = ({ userName = 'Mentor' }) => {
   const navigate = useNavigate();
@@ -23,15 +24,12 @@ const MentorNavbar = ({ userName = 'Mentor' }) => {
 
   return (
     <nav className="bg-[#121212] border-b border-gray-700 rounded-b-xl sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="px-2">
         <div className="flex items-center justify-between h-14">
           
           {/* Logo */}
-          <Link to="/mentor/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs">U</span>
-            </div>
-            <span className="text-lg font-bold text-white">UpLoom</span>
+          <Link to="/mentor/dashboard" className="flex items-center hover:opacity-80 transition-opacity">
+            <img src={Logo} alt="MentorLink Logo" className="h-8 w-auto brightness-0 invert" />
           </Link>
 
           {/* Desktop Navigation Items */}

@@ -1,30 +1,109 @@
 import React from "react";
-import { Circle, MoreVertical, Phone, Video } from "lucide-react";
+import { Circle, MoreVertical, Phone, Video, Clock } from "lucide-react";
 
-export function ChatHeader() {
+export function ChatHeader({ 
+  participantName = "Select a conversation", 
+  participantRole = "", 
+  participantAvatar = "",
+  sessionData = null
+}) {
+  const getInitials = (name) => {
+    if (!name || typeof name !== 'string') return 'U';
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  // Format session time if available
+  const formatSessionTime = () => {
+    if (!sessionData?.sessionDate) return null;
+    
+    try {
+      const date = new Date(sessionData.sessionDate);
+      if (isNaN(date.getTime())) return null;
+      
+      return date.toLocaleString('en-US', {
+        weekday: 'short',
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      console.error('Error formatting session time:', e);
+      return null;
+    }
+  };
+
+  const sessionTime = formatSessionTime();
+
   return (
     <header className="flex items-center justify-between px-6 py-4 border-b border-[#535353]/30 bg-[#121212]">
       <div className="flex items-center gap-4">
         <div className="relative">
           <div className="h-12 w-12 border-2 border-gray-600 rounded-full overflow-hidden bg-[#212121] flex items-center justify-center">
-            <span className="text-lg font-semibold text-white">SM</span>
+            {participantAvatar ? (
+              <img 
+                src={participantAvatar} 
+                alt={participantName} 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.style.display = 'none';
+                  e.target.parentElement.querySelector('span').style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <span className="text-lg font-semibold text-white flex items-center justify-center w-full h-full">
+              {getInitials(participantName)}
+            </span>
           </div>
-          <Circle className="absolute -bottom-0.5 -right-0.5 h-4 w-4 fill-gray-400 text-gray-400" />
+          <Circle className="absolute -bottom-0.5 -right-0.5 h-4 w-4 fill-green-500 text-green-500" />
         </div>
         <div>
-          <h1 className="text-lg font-semibold text-white">Sarah Mitchell</h1>
-          <p className="text-sm text-[#b3b3b3]">Senior Product Manager • Online</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-semibold text-white">
+              {participantName}
+            </h1>
+            {sessionData?.isMentor === false && (
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                Mentor
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-sm text-[#b3b3b3]">
+            {participantRole && (
+              <span>{participantRole}</span>
+            )}
+            {sessionTime && (
+              <div className="flex items-center text-xs text-gray-400">
+                <Clock className="h-3 w-3 mr-1" />
+                <span>{sessionTime}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="p-2 rounded-lg text-[#b3b3b3] hover:text-white hover:bg-[#212121] transition-colors">
-          <Phone className="h-5 w-5" />
-        </button>
-        <button className="p-2 rounded-lg text-[#b3b3b3] hover:text-white hover:bg-[#212121] transition-colors">
-          <Video className="h-5 w-5" />
-        </button>
-        <button className="p-2 rounded-lg text-[#b3b3b3] hover:text-white hover:bg-[#212121] transition-colors">
+        {sessionData?.roomId && (
+          <button 
+            className="p-2 rounded-lg text-[#b3b3b3] hover:text-white hover:bg-[#212121] transition-colors"
+            title="Start Video Call"
+            onClick={() => {
+              // Handle video call with sessionData.roomId
+            }}
+          >
+            <Video className="h-5 w-5" />
+          </button>
+        )}
+        <button 
+          className="p-2 rounded-lg text-[#b3b3b3] hover:text-white hover:bg-[#212121] transition-colors"
+          title="More options"
+        >
           <MoreVertical className="h-5 w-5" />
         </button>
       </div>

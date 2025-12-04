@@ -1,0 +1,35 @@
+/* Custom scrollbar styling to match dark UI theme */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #404040 #202327;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #202327;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+  border: 1px solid #202327;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #535353;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+  background: #606060;
+}
+
+/* Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #404040 #202327;
+}
