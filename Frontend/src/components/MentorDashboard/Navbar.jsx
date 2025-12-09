@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Users, CheckSquare, MessageCircle, UserPlus, Menu, X, Home, LogOut } from 'lucide-react';
+import { Users, CheckSquare, MessageCircle, UserPlus, Menu, X, Home, LogOut, BookOpen } from 'lucide-react';
 import UserProfileSidebar from '../UserProfileSidebar';
 import Logo from '../../assets/Logo.png';
 
@@ -31,15 +31,16 @@ const MentorNavbar = ({ userName = 'Mentor' }) => {
   };
 
   const menuItems = [
-    { label: 'Home', href: '/mentor/dashboard', icon: Home },
-    { label: 'My Mentees', href: '/mentor/mentees', icon: Users },
-    { label: 'My Tasks', href: '/mentor/tasks', icon: CheckSquare },
-    { label: 'Messages', href: '/mentor/messages', icon: MessageCircle },
-    { label: 'Get Mentees', href: '/mentor/get-mentees', icon: UserPlus },
+    { label: 'Home', href: '/mentor/dashboard', icon: Home, color: 'text-blue-400' },
+    { label: 'My Mentees', href: '/mentor/mentees', icon: Users, color: 'text-blue-400' },
+    { label: 'My Tasks', href: '/mentor/tasks', icon: CheckSquare, color: 'text-blue-400' },
+    { label: 'Messages', href: '/mentor/messages', icon: MessageCircle, color: 'text-blue-400' },
+    { label: 'Get Mentees', href: '/mentor/get-mentees', icon: UserPlus, color: 'text-blue-400' },
+    { label: 'Journal', href: '/mentor/journal', icon: BookOpen, color: 'text-blue-400', badge: 'New' },
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 supports-backdrop-blur:bg-black/80 border-b border-[#121212] ${isScrolled ? 'bg-black/80 backdrop-blur-lg' : 'bg-black'}`} style={{
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 supports-backdrop-blur:bg-black/80 border-b border-[#121212] shadow-lg ${isScrolled ? 'bg-black/80 backdrop-blur-lg shadow-white/20' : 'bg-black shadow-white/10'}`} style={{
       backdropFilter: isScrolled ? 'blur(12px)' : 'none',
       WebkitBackdropFilter: isScrolled ? 'blur(12px)' : 'none'
     }}>
@@ -52,26 +53,27 @@ const MentorNavbar = ({ userName = 'Mentor' }) => {
           </Link>
 
           {/* Desktop Navigation Items */}
-          <div className="hidden md:flex items-center gap-6 flex-1 justify-center">
+          <div className="hidden md:flex items-center gap-3 flex-1 justify-center">
             {menuItems.map((item) => {
               const Icon = item.icon;
+              const isActive = location.pathname === item.href;
               return (
                 <Link
                   key={item.label}
                   to={item.href}
-                  className={`p-2 rounded-lg flex items-center gap-1.5 transition-colors ${
-                    location.pathname === item.href 
-                      ? 'bg-gray-700 text-white' 
-                      : 'text-gray-300 hover:bg-gray-700 hover:text-cyan-400'
+                  className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 ${
+                    isActive 
+                      ? 'bg-gray-600 text-white' 
+                      : 'bg-gray-800/40 text-gray-300 hover:bg-gray-700/60 hover:text-white'
                   }`}
                   title={item.label}
                 >
                   <Icon 
                     size={18} 
-                    className={location.pathname === item.href ? 'text-white' : 'text-gray-300 hover:text-cyan-400'} 
+                    className={item.color} 
                   />
                   <span className={`text-xs font-medium ${
-                    location.pathname === item.href ? 'text-white' : 'text-gray-300 hover:text-cyan-400'
+                    isActive ? 'text-white' : 'text-gray-300'
                   }`}>
                     {item.label}
                   </span>
@@ -91,7 +93,7 @@ const MentorNavbar = ({ userName = 'Mentor' }) => {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-1.5 text-gray-300 hover:text-white"
             >
-              {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              {isMenuOpen ? <X size={20} className="text-red-400" /> : <Menu size={20} className="text-gray-400" />}
             </button>
           </div>
         </div>
@@ -113,7 +115,7 @@ const MentorNavbar = ({ userName = 'Mentor' }) => {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <Icon size={16} className={location.pathname === item.href ? 'text-white' : 'text-gray-300'} />
+                    <Icon size={16} className={item.color} />
                     {item.label}
                   </div>
                 </Link>

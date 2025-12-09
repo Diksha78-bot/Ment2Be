@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { FiVideo, FiVideoOff, FiMic, FiMicOff, FiPhone, FiMessageSquare, FiUsers, FiMonitor } from 'react-icons/fi';
-import io from 'socket.io-client';
+import { connect, createLocalAudioTrack, createLocalVideoTrack } from 'twilio-video';
 
 const MeetingRoom = () => {
   const [searchParams] = useSearchParams();

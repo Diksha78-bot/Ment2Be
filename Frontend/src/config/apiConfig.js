@@ -1,31 +1,55 @@
 /**
  * API Configuration - Switch between Node.js and Java backends
- * Change TASK_API_URL to switch between implementations
+ * Change ACTIVE_BACKEND to switch between implementations
  */
 
 // Set to 'nodejs' or 'java' to switch between backends
-const ACTIVE_BACKEND = 'java'; // Change this to 'nodejs' to use Node.js backend
+const ACTIVE_BACKEND = 'nodejs'; // ✅ Using Node.js backend for forum
 
-const API_URLS = {
-  nodejs: 'http://localhost:4000/api/tasks',
-  java: 'http://localhost:8081/api/tasks'
+// Base URLs for different backends
+const BASE_URLS = {
+  nodejs: 'http://localhost:4000',
+  java: 'http://localhost:8081'
 };
 
-export const TASK_API_URL = API_URLS[ACTIVE_BACKEND];
+// API URLs for different services
+const API_URLS = {
+  nodejs: {
+    tasks: 'http://localhost:4000/api/tasks',
+    forum: 'http://localhost:4000/api/forum'
+  },
+  java: {
+    tasks: 'http://localhost:8081/api/tasks',
+    forum: 'http://localhost:8081/api/forum'
+  }
+};
+
+// Export base URL for general use
+export const API_BASE_URL = BASE_URLS[ACTIVE_BACKEND];
+
+// Export specific service URLs
+export const TASK_API_URL = API_URLS[ACTIVE_BACKEND].tasks;
+export const FORUM_API_URL = API_URLS[ACTIVE_BACKEND].forum;
 
 export const getTasksApiUrl = () => TASK_API_URL;
+export const getForumApiUrl = () => FORUM_API_URL;
 
 export const switchBackend = (backend) => {
   if (!API_URLS[backend]) {
     console.error(`Invalid backend: ${backend}. Use 'nodejs' or 'java'`);
     return;
   }
-  console.log(`Switched to ${backend} backend: ${API_URLS[backend]}`);
+  console.log(`Switched to ${backend} backend`);
+  console.log(`  Tasks API: ${API_URLS[backend].tasks}`);
+  console.log(`  Forum API: ${API_URLS[backend].forum}`);
 };
 
 export default {
+  API_BASE_URL,
   TASK_API_URL,
+  FORUM_API_URL,
   getTasksApiUrl,
+  getForumApiUrl,
   switchBackend,
   ACTIVE_BACKEND
 };

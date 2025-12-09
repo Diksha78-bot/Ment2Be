@@ -17,14 +17,12 @@ const SessionsPage = () => {
       console.log('Attempting to join session:', session);
       
       // For ZegoCloud meetings
-      if (session.meetingType === 'zegocloud' || (session.meetingLink && session.meetingLink.includes('zegocloud'))) {
-        const roomId = session.meetingId || session.roomId || session.meetingLink?.split('/').pop();
-        if (roomId) {
-          const meetingUrl = `/meeting-zego?roomId=${encodeURIComponent(roomId)}&sessionId=${session._id}`;
-          console.log('Opening ZegoCloud meeting:', meetingUrl);
-          window.open(meetingUrl, '_blank');
-          return;
-        }
+      const roomId = session.meetingId || session.roomId || `session_${session._id}`;
+      if (roomId) {
+        const meetingUrl = `/student/meeting/${encodeURIComponent(roomId)}/${session._id}`;
+        console.log('Opening ZegoCloud meeting:', meetingUrl);
+        navigate(meetingUrl);
+        return;
       }
       
       // For Zoom meetings
@@ -47,15 +45,6 @@ const SessionsPage = () => {
       if (session.meetingLink) {
         console.log('Opening direct meeting link');
         window.open(session.meetingLink, '_blank');
-        return;
-      }
-      
-      // For meeting ID only
-      const roomId = session.meetingId || session.roomId;
-      if (roomId) {
-        const meetingUrl = `/meeting?roomId=${encodeURIComponent(roomId)}&sessionId=${session._id}`;
-        console.log('Opening default meeting room:', meetingUrl);
-        window.open(meetingUrl, '_blank');
         return;
       }
       
@@ -240,10 +229,14 @@ const SessionsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden pt-14">
+    <div className="min-h-screen bg-black text-white overflow-hidden pt-14 scrollbar-hide">
+      <style>{`
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+      `}</style>
       <Navbar userName={user?.name || 'Student'} />
       
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 overflow-hidden">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">My Sessions</h1>
           <p className="text-sm text-gray-400 mt-1">Manage your mentoring sessions</p>
@@ -260,7 +253,7 @@ const SessionsPage = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 overflow-x-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 overflow-hidden">
             {/* Upcoming Sessions */}
             <div>
               <div className="flex items-center justify-between mb-4">

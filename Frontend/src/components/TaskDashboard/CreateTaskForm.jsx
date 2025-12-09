@@ -123,7 +123,7 @@ export function CreateTaskForm() {
   const selectedMentee = mentees.find((m) => m.id === formData.menteeId);
 
   return (
-    <div className="min-h-screen bg-[#202327]">
+    <div className="min-h-screen bg-[#000000]">
       {/* Main Content */}
       <main className="mx-auto px-6 sm:px-8 lg:px-12 py-8">
         <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-3">

@@ -48,9 +48,52 @@
 .scrollbar-hide {
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
   scrollbar-width: none;  /* Firefox */
+  /* For WebKit browsers (Chrome, Safari) */
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Safari and Chrome */
+
+/* Custom scrollbar for MentorDashboard */
+.custom-scroll {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  /* WebKit (Chrome, Safari) */
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  
+  /* Ensure scrolling still works */
+  -webkit-overflow-scrolling: touch;
+  overflow: -moz-scrollbars-none;
+}
+
+/* Target the Recent Messages scrollbar specifically */
+.max-h-32.overflow-y-auto {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.max-h-32.overflow-y-auto::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Ensure all scrollable areas in MentorDashboard hide their scrollbars */
+.bg-[\#121212] .overflow-y-auto,
+.bg-[\#121212] .overflow-auto {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.bg-[\#121212] .overflow-y-auto::-webkit-scrollbar,
+.bg-[\#121212] .overflow-auto::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Add these styles to your index.css */

@@ -1,4 +1,4 @@
-// ZegoCloud UI Customization Configuration
+// ZegoCloud UI Customization Configuration - Matching Dashboard Theme
 
 export const ZEGO_UI_CONFIG = {
   // Basic UI Controls
@@ -16,8 +16,8 @@ export const ZEGO_UI_CONFIG = {
   showMyCameraToggleButton: true,
   showMyMicrophoneToggleButton: true,
   showAudioVideoSettingsButton: true,
-  turnOnMicrophoneWhenJoining: true,
-  turnOnCameraWhenJoining: true,
+  turnOnMicrophoneWhenJoining: false, // Microphone off by default
+  turnOnCameraWhenJoining: false, // Camera off by default
   
   // Display Settings
   showRoomTimer: true,
@@ -30,73 +30,76 @@ export const ZEGO_UI_CONFIG = {
   layout: "Auto", // "Auto", "Sidebar", "Grid"
   maxUsers: 2,
   
-  // ZegoCloud Theme Configuration
+  // ZegoCloud Theme Configuration - Matching Dashboard (Black #000000, Dark Gray #121212)
   theme: {
     mode: 'dark', // 'dark' or 'light'
-    primaryColor: '#4f46e5', // Main theme color
+    primaryColor: '#6366f1', // Indigo - matches dashboard accent
   },
 };
 
 export const ZEGO_STYLE_CONFIG = {
-  // Main container
-  backgroundColor: '#1a1a1a',
+  // Main container - Match dashboard black background
+  backgroundColor: '#000000',
   color: '#ffffff',
   
-  // Video containers
+  // Video containers - Match dashboard card color
   videoContainer: {
-    backgroundColor: '#2d2d2d',
+    backgroundColor: '#121212',
     borderRadius: '12px',
-    border: '2px solid #374151',
+    border: '1px solid #374151',
   },
   
-  // Control bar at bottom
+  // Control bar at bottom - Dark with transparency
   controlBar: {
-    backgroundColor: 'rgba(17, 24, 39, 0.95)',
+    backgroundColor: 'rgba(18, 18, 18, 0.98)',
     borderRadius: '30px',
     padding: '12px 20px',
     backdropFilter: 'blur(10px)',
+    border: '1px solid #374151',
   },
   
-  // Individual buttons
+  // Individual buttons - Indigo accent
   button: {
-    backgroundColor: '#4f46e5',
+    backgroundColor: '#6366f1',
     borderRadius: '50%',
     border: 'none',
-    boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)',
+    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
     transition: 'all 0.2s ease',
+    color: '#ffffff',
   },
   
   // Button hover states
   buttonHover: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#818cf8',
     transform: 'scale(1.05)',
   },
   
-  // Chat panel
+  // Chat panel - Match dashboard card
   chatContainer: {
-    backgroundColor: '#374151',
+    backgroundColor: '#121212',
     borderRadius: '12px',
-    border: '1px solid #4b5563',
+    border: '1px solid #374151',
   },
   
-  // Chat messages
+  // Chat messages - Slightly lighter than background
   chatMessage: {
-    backgroundColor: '#4b5563',
+    backgroundColor: '#1f1f1f',
     borderRadius: '8px',
     padding: '8px 12px',
     marginBottom: '8px',
+    border: '1px solid #2d2d2d',
   },
   
-  // User list
+  // User list - Match dashboard card
   userListContainer: {
-    backgroundColor: '#374151',
+    backgroundColor: '#121212',
     borderRadius: '12px',
-    border: '1px solid #4b5563',
+    border: '1px solid #374151',
   },
   
-  // Screen sharing
+  // Screen sharing - Indigo accent border
   screenShareContainer: {
-    backgroundColor: '#111827',
+    backgroundColor: '#000000',
     borderRadius: '12px',
     border: '2px solid #6366f1',
   },
@@ -142,21 +145,21 @@ export const ZEGO_TEXT_CONFIG = {
 export const ZEGO_BRANDING_CONFIG = {
   logoURL: '', // Add your logo URL here
   companyName: 'K23DX Mentoring Platform',
-  primaryColor: '#4f46e5',
-  secondaryColor: '#6366f1',
-  accentColor: '#8b5cf6',
+  primaryColor: '#6366f1', // Indigo
+  secondaryColor: '#818cf8', // Light Indigo
+  accentColor: '#4f46e5', // Dark Indigo
 };
 
 // ZegoCloud Theme Presets
 export const ZEGO_THEMES = {
-  // Dark Theme
+  // Dark Theme - Matching Dashboard
   dark: {
     mode: 'dark',
-    primaryColor: '#4f46e5', // Indigo
-    backgroundColor: '#1f2937',
-    surfaceColor: '#374151',
+    primaryColor: '#6366f1', // Indigo
+    backgroundColor: '#000000', // Pure black like dashboard
+    surfaceColor: '#121212', // Dark gray like dashboard cards
     textColor: '#ffffff',
-    borderColor: '#4b5563',
+    borderColor: '#374151',
   },
   
   // Light Theme  

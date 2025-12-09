@@ -26,6 +26,7 @@ const BookSession = () => {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -90,9 +91,35 @@ const BookSession = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleDateSelect = (date) => {
+  const handleDateSelect = async (date) => {
     setSelectedDate(date);
     setFormData(prev => ({ ...prev, sessionDate: date }));
+    setSelectedTimeSlot(''); // Reset time slot when date changes
+    
+    // Fetch available time slots for this date
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:4000/api/mentor-availability/${mentorId}?date=${date}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const data = await response.json();
+      console.log('📅 Availability API Response:', data);
+      console.log('📋 Available slots:', data.availableSlots);
+      
+      if (data.success && data.availableSlots) {
+        setAvailableTimeSlots(data.availableSlots);
+      } else {
+        setAvailableTimeSlots([]);
+      }
+    } catch (error) {
+      console.error('Error fetching available slots:', error);
+      setAvailableTimeSlots([]);
+    }
   };
 
   const handleTimeSlotSelect = (time) => {
@@ -498,21 +525,42 @@ const BookSession = () => {
                   
                   {/* Preset Time Slots */}
                   <div className="grid grid-cols-3 gap-1.5">
-                    {timeSlots.map((time) => (
-                      <button
-                        key={time}
-                        type="button"
-                        onClick={() => handleTimeSlotSelect(time)}
-                        className={`p-2 text-center border rounded transition-colors text-xs ${
-                          selectedTimeSlot === time
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-[#202327] text-gray-300 border-gray-700 hover:border-blue-500 hover:bg-blue-500/10'
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    ))}
+                    {timeSlots.map((time) => {
+                      const isAvailable = selectedDate && availableTimeSlots.includes(time);
+                      return (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => isAvailable && handleTimeSlotSelect(time)}
+                          disabled={!isAvailable}
+                          className={`p-2 text-center border rounded transition-all text-xs ${
+                            selectedTimeSlot === time && isAvailable
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : isAvailable
+                              ? 'bg-[#202327] text-gray-300 border-gray-700 hover:border-blue-500 hover:bg-blue-500/10 cursor-pointer'
+                              : 'bg-[#202327] text-gray-500 border-gray-700 opacity-50 cursor-not-allowed'
+                          }`}
+                          title={!isAvailable && selectedDate ? 'Not available' : ''}
+                        >
+                          {time}
+                        </button>
+                      );
+                    })}
                   </div>
+                  {!selectedDate && (
+                    <p className="text-gray-500 text-xs text-center mt-2">Select a date to see available times</p>
+                  )}
+                  {selectedDate && availableTimeSlots.length === 0 && (
+                    <div className="mt-3 p-2 bg-yellow-900/30 border border-yellow-700/50 rounded-lg">
+                      <p className="text-yellow-400 text-xs text-center">⚠️ No available time slots for this date</p>
+                      <p className="text-yellow-300 text-[11px] text-center mt-1">Please select a different date</p>
+                    </div>
+                  )}
+                  {selectedDate && availableTimeSlots.length > 0 && (
+                    <div className="mt-3 p-2 bg-green-900/30 border border-green-700/50 rounded-lg">
+                      <p className="text-green-400 text-xs text-center">✓ {availableTimeSlots.length} available slot(s) for this date</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Selected Date & Time Display */}

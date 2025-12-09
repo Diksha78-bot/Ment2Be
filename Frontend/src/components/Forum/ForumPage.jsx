@@ -1,7 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import './ForumPage.css'
+import * as forumService from "../../services/forumService"
 import {
   Search,
   Zap,
@@ -14,6 +16,8 @@ import {
   ArrowUpRight,
   ArrowRight,
   PenLine,
+  AlertCircle,
+  MessageCircle,
 } from "lucide-react"
 
 const domains = [
@@ -24,56 +28,105 @@ const domains = [
   { id: "product", label: "Product", icon: Lightbulb },
 ]
 
-const questions = [
-  {
-    id: 1,
-    author: "Rituparna Padira",
-    date: "24 Nov 2025",
-    avatar: "",
-    content:
-      "1. Could you kindly review my resume (sent in chats) and share your thoughts. What can I improve to strengthen my chances of getting shortlisted in microsoft ? Anything which I should remove? 2. Can you...",
-    answerPreview: null,
-    upvotes: 0,
-    answers: 0,
-  },
-  {
-    id: 2,
-    author: "Monica Bhattacharya",
-    date: "12 Nov 2025",
-    avatar: "",
-    content:
-      "I am 2023 B.Tech graduate in Computer Science and looking forward to get into product based companies. I am learning MERN stack development from NxtWave Technologies. I have zero knowledge on DSA. I want to learn DSA from scratch through free resources from YouTube or any other platforms. 1. Will I secure a perfect job with 2+years of career gap? 2. Do MERN full stack is sufficient to crack Small companies with a decent package of 6 to 10 LPA? Orelse, I need to learn DSA must and should for lower packages? 3. What are the packages and names of the companies offering those packages does a candidate can get with zero DSA knowledge?",
-    answerPreview:
-      "Hi, a career gap isn't a big issue if you show solid skills and consistent learning. MERN helps you get into smaller product companies, but DSA is important if you want better stability, stronger interviews and higher packages. Without DSA you can still get roles, but the options and pay ranges shrink fast....",
-    upvotes: 0,
-    answers: 1,
-  },
-  {
-    id: 3,
-    author: "Amit Sharma",
-    date: "10 Nov 2025",
-    avatar: "",
-    content:
-      "I'm currently working as a frontend developer with 3 years of experience. I want to transition into a full-stack role. What technologies should I focus on learning first? Should I go with Node.js or Python for backend?",
-    answerPreview:
-      "Great question! With your frontend experience, Node.js would be a natural transition since you already know JavaScript. However, Python opens up more opportunities in data science and ML if that interests you...",
-    upvotes: 5,
-    answers: 3,
-  },
-]
-
 export function ForumPage() {
+  const navigate = useNavigate()
   const [selectedDomain, setSelectedDomain] = useState("for-you")
   const [sortBy, setSortBy] = useState("Most Recent")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [questions, setQuestions] = useState([])
+  const [filteredQuestions, setFilteredQuestions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
 
+  // Fetch questions from API
+  const fetchQuestions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const result = await forumService.getAllQuestions(1, 50);
+      
+      if (result.questions) {
+        setQuestions(result.questions);
+        filterAndSortQuestions(result.questions, selectedDomain, searchQuery, sortBy);
+      } else {
+        setQuestions([]);
+        setFilteredQuestions([]);
+      }
+    } catch (err) {
+      console.error('Error fetching questions:', err);
+      setError(err.message || 'Failed to fetch questions');
+      setQuestions([]);
+      setFilteredQuestions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  // Filter and sort questions
+  const filterAndSortQuestions = (questionsData, domain, search, sort) => {
+    let filtered = questionsData;
+
+    // Filter by domain
+    if (domain !== 'for-you') {
+      filtered = filtered.filter(q => q.domain?.toLowerCase() === domain.toLowerCase());
+    }
+
+    // Filter by search query
+    if (search.trim()) {
+      filtered = filtered.filter(q =>
+        q.title?.toLowerCase().includes(search.toLowerCase()) ||
+        q.content?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Sort
+    if (sort === 'Most Recent') {
+      filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    } else if (sort === 'Most Answered') {
+      filtered.sort((a, b) => (b.answers?.length || 0) - (a.answers?.length || 0));
+    } else if (sort === 'Most Upvoted') {
+      filtered.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+    }
+
+    setFilteredQuestions(filtered);
+  };
+
+  // Handle search
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    filterAndSortQuestions(questions, selectedDomain, query, sortBy);
+  };
+
+  // Handle domain change
+  const handleDomainChange = (domain) => {
+    setSelectedDomain(domain);
+    filterAndSortQuestions(questions, domain, searchQuery, sortBy);
+  };
+
+  // Handle sort change
+  const handleSortChange = (sort) => {
+    setSortBy(sort);
+    filterAndSortQuestions(questions, selectedDomain, searchQuery, sort);
+  };
+
   return (
-    <div className="h-screen bg-[#202327] overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 py-8 h-full">
-        <div className="flex gap-8 h-full">
+    <div className="h-screen bg-[#000000] overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 py-8 h-full flex flex-col">
+        <div className="flex gap-8 h-full overflow-hidden">
           {/* Main Content */}
-          <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto pr-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitScrollbar: 'none' }}>
+            <style>{`
+              div::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
             {/* Header */}
             <h1 className="text-2xl font-bold text-white mb-2">Forum - Ask Mentor Anything</h1>
             <p className="text-[#b3b3b3] mb-6">
@@ -87,6 +140,8 @@ export function ForumPage() {
               <input
                 type="text"
                 placeholder="Search Questions Here"
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
                 className="w-full pl-12 h-12 border border-[#404040] rounded-lg text-blue-500 placeholder:text-blue-500 bg-[#121212] focus:outline-none focus:border-blue-500"
               />
             </div>
@@ -101,7 +156,7 @@ export function ForumPage() {
                   return (
                     <button
                       key={domain.id}
-                      onClick={() => setSelectedDomain(domain.id)}
+                      onClick={() => handleDomainChange(domain.id)}
                       className={`flex flex-col items-center justify-center px-6 py-4 rounded-lg border transition-all min-w-[100px] ${
                         isSelected
                           ? "border-blue-500 text-blue-500 bg-[#121212]"
@@ -122,71 +177,161 @@ export function ForumPage() {
                 <h2 className="text-lg font-semibold text-white">Questions</h2>
                 <div className="flex items-center gap-2 text-sm text-[#b3b3b3]">
                   <span>Sort by:</span>
-                  <button className="flex items-center gap-1 font-medium text-white">
-                    {sortBy}
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
+                  <select 
+                    value={sortBy}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    className="flex items-center gap-1 font-medium text-white bg-[#121212] border border-[#404040] rounded px-2 py-1 cursor-pointer"
+                  >
+                    <option>Most Recent</option>
+                    <option>Most Answered</option>
+                    <option>Most Upvoted</option>
+                  </select>
                 </div>
               </div>
 
               {/* Divider */}
               <div className="border-t border-[#404040] mb-4" />
 
-              {/* Questions List */}
-              <div className="space-y-4">
-                {questions.map((question) => (
-                  <div key={question.id} className="p-5 border border-[#404040] rounded-lg bg-[#121212]">
-                    {/* Author Info */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                        <span className="text-blue-600 text-xs font-medium">
-                          {question.author
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </span>
-                      </div>
-                      <span className="text-sm text-[#b3b3b3]">
-                        Asked by <span className="font-medium text-white">{question.author}</span>
-                      </span>
-                      <span className="text-[#535353]">|</span>
-                      <span className="text-sm text-[#b3b3b3]">{question.date}</span>
-                    </div>
+              {/* Loading State */}
+              {loading && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-500">Loading questions...</div>
+                </div>
+              )}
 
-                    {/* Question Content */}
-                    <p className="text-white font-medium leading-relaxed mb-4">{question.content}</p>
+              {/* Error State */}
+              {error && !loading && (
+                <div className="p-4 border border-red-500 rounded-lg bg-[#121212]">
+                  <div className="flex items-center gap-2 text-red-400 mb-2">
+                    <AlertCircle className="h-5 w-5" />
+                    <span className="font-semibold">Error</span>
+                  </div>
+                  <p className="text-[#b3b3b3]">{error}</p>
+                </div>
+              )}
 
-                    {/* Answer Preview */}
-                    {question.answerPreview && (
-                      <div className="mb-4">
-                        <p className="text-[#b3b3b3] text-sm leading-relaxed">{question.answerPreview}</p>
-                        <button className="text-blue-500 text-sm font-medium mt-2 hover:underline">
-                          Read Full Answer
-                        </button>
+              {/* Empty State */}
+              {!loading && !error && filteredQuestions.length === 0 && (
+                <div className="p-12 text-center border border-[#404040] rounded-lg bg-[#121212]">
+                  <div className="flex justify-center mb-6">
+                    <div className="relative w-24 h-24">
+                      <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center">
+                        <MessageCircle className="h-12 w-12 text-gray-500" />
                       </div>
-                    )}
-
-                    {/* Footer Actions */}
-                    <div className="flex items-center justify-between pt-3 border-t border-[#404040]">
-                      <div className="flex items-center gap-6">
-                        <span className="text-sm text-[#b3b3b3]">{question.upvotes} Upvotes</span>
-                        <div className="flex items-center gap-1.5 text-sm text-[#b3b3b3]">
-                          <PenLine className="h-4 w-4" />
-                          <span>{question.answers} Answers</span>
-                        </div>
-                      </div>
-                      <button className="bg-white text-black hover:bg-gray-200 rounded-lg px-4 py-2 font-medium transition-colors">
-                        Answer Question
-                      </button>
                     </div>
                   </div>
-                ))}
+                  <h3 className="text-xl font-semibold text-white mb-2">No questions found</h3>
+                  <p className="text-[#b3b3b3]">
+                    {searchQuery ? 'Try adjusting your search query' : 'No questions in this category yet. Check back soon!'}
+                  </p>
+                </div>
+              )}
+
+              {/* Questions List */}
+              <div className="space-y-4 pb-8">
+                {filteredQuestions.map((question) => {
+                  const authorName = question.author?.name || "Unknown User";
+                  const authorInitials = authorName
+                    .split(" ")
+                    .slice(0, 2)
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase();
+                  
+                  const formatDate = (dateString) => {
+                    if (!dateString) return "Recently";
+                    const date = new Date(dateString);
+                    const now = new Date();
+                    const diffTime = Math.abs(now - date);
+                    const diffSeconds = Math.floor(diffTime / 1000);
+                    const diffMinutes = Math.floor(diffSeconds / 60);
+                    const diffHours = Math.floor(diffMinutes / 60);
+                    const diffDays = Math.floor(diffHours / 24);
+                    const diffWeeks = Math.floor(diffDays / 7);
+                    const diffMonths = Math.floor(diffDays / 30);
+                    const diffYears = Math.floor(diffDays / 365);
+
+                    if (diffSeconds < 60) return "Just now";
+                    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+                    if (diffHours < 24) return `${diffHours}h ago`;
+                    if (diffDays === 0) return "Today";
+                    if (diffDays === 1) return "Yesterday";
+                    if (diffDays < 7) return `${diffDays}d ago`;
+                    if (diffWeeks < 4) return `${diffWeeks}w ago`;
+                    if (diffMonths < 12) return `${diffMonths}mo ago`;
+                    if (diffYears >= 1) return `${diffYears}y ago`;
+                    return date.toLocaleDateString();
+                  };
+
+                  return (
+                    <div key={question._id || question.id} className="p-5 border border-[#404040] rounded-lg bg-[#121212]">
+                      {/* Author Info */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                          <span className="text-blue-600 text-xs font-medium">
+                            {authorInitials}
+                          </span>
+                        </div>
+                        <span className="text-sm text-[#b3b3b3]">
+                          Asked by <span className="font-medium text-white">{authorName}</span>
+                        </span>
+                        <span className="text-[#535353]">|</span>
+                        <span className="text-sm text-[#b3b3b3]">{formatDate(question.createdAt)}</span>
+                      </div>
+
+                      {/* Question Content */}
+                      <p className="text-white font-medium leading-relaxed mb-4">{question.title}</p>
+                      <p className="text-[#b3b3b3] text-sm leading-relaxed mb-4">{question.content}</p>
+
+                      {/* Category Badge */}
+                      <div className="mb-4">
+                        <span className="inline-block bg-[#2a2a2a] text-gray-300 text-xs px-3 py-1 rounded-full">
+                          {question.category || "general"}
+                        </span>
+                      </div>
+
+                      {/* Answer Preview */}
+                      {question.answers && question.answers.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-[#b3b3b3] text-sm leading-relaxed">{question.answers[0].content}</p>
+                          {question.answers.length > 1 && (
+                            <button className="text-blue-500 text-sm font-medium mt-2 hover:underline">
+                              Read all {question.answers.length} answers
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Footer Actions */}
+                      <div className="flex items-center justify-between pt-3 border-t border-[#404040]">
+                        <div className="flex items-center gap-6">
+                          <span className="text-sm text-[#b3b3b3]">{question.upvotes || 0} Upvotes</span>
+                          <div className="flex items-center gap-1.5 text-sm text-[#b3b3b3]">
+                            <PenLine className="h-4 w-4" />
+                            <span>{question.answers?.length || 0} Answers</span>
+                          </div>
+                        </div>
+                        <button 
+                        onClick={() => navigate(`/mentor/forum/question/${question._id || question.id}`)}
+                        className="bg-white text-black hover:bg-gray-200 rounded-lg px-4 py-2 font-medium transition-colors"
+                      >
+                        Answer Question
+                      </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
 
           {/* Sidebar */}
-          <div className="w-80 shrink-0 space-y-4 overflow-y-auto custom-scrollbar">
+          <div className="w-80 shrink-0 space-y-4 overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <style>{`
+              div::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
             {/* Getting Mentees Card */}
             <div className="p-4 border border-[#404040] rounded-lg bg-[#121212]">
               <div className="flex items-center justify-between">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
 import { 
   ZEGO_UI_CONFIG, 
@@ -10,17 +10,21 @@ import {
 } from '../config/zegoConfig';
 
 const MeetingRoomZego = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { roomId, sessionId } = useParams();
+  const location = useLocation();
   
-  // Get URL parameters
-  const roomId = searchParams.get('roomId');
-  const sessionId = searchParams.get('sessionId');
-  const userRole = searchParams.get('userRole');
+  console.log('MeetingRoomZego - URL Params:', { roomId, sessionId });
+  console.log('MeetingRoomZego - Pathname:', location.pathname);
+  
+  // Determine user role from URL path
+  const userRole = location.pathname.includes('/student/') ? 'student' : 'mentor';
   
   // States
   const [isConnected, setIsConnected] = useState(false);
   const [participants, setParticipants] = useState([]);
+  const [sessionDuration, setSessionDuration] = useState(3600); // 60 minutes in seconds
+  const [sessionEnded, setSessionEnded] = useState(false);
   
   // Refs
   const meetingContainerRef = useRef(null);
@@ -40,23 +44,91 @@ const MeetingRoomZego = () => {
     serverSecret: "998c5a5fd88e6a612fb75f2b488fe56a", // Replace with your ZegoCloud Server Secret
   };
 
-  // Validate parameters early
-  if (!roomId || !sessionId || !user) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-center">
-          <h1 className="text-2xl font-bold mb-4">Invalid Meeting Parameters</h1>
-          <p className="mb-4">Unable to join the meeting. Please try again.</p>
-          <button 
-            onClick={() => navigate('/')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Start session timer - 60 minutes
+  const startSessionTimer = () => {
+    console.log('⏱️ Starting 60-minute session timer...');
+    
+    const timerInterval = setInterval(() => {
+      setSessionDuration(prev => {
+        const newDuration = prev - 1;
+        
+        // Log every 5 minutes
+        if (newDuration % 300 === 0) {
+          const minutes = Math.floor(newDuration / 60);
+          console.log(`⏱️ Session time remaining: ${minutes} minutes`);
+        }
+        
+        // When timer reaches 0, end session
+        if (newDuration <= 0) {
+          clearInterval(timerInterval);
+          endSession();
+          return 0;
+        }
+        
+        return newDuration;
+      });
+    }, 1000); // Update every second
+  };
+
+  // End session automatically
+  const endSession = async () => {
+    console.log('⏰ 60-minute session time has ended. Ending meeting...');
+    setSessionEnded(true);
+    
+    // Show alert to user
+    alert('Your 60-minute session has ended. The meeting will now close.');
+    
+    // Update session status in backend
+    try {
+      const token = localStorage.getItem('token');
+      if (token && sessionId) {
+        await fetch(`http://localhost:4000/api/bookings/${sessionId}/complete`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: 'completed' })
+        });
+        console.log('✅ Session marked as completed in database');
+      }
+    } catch (error) {
+      console.error('Error updating session status:', error);
+    }
+    
+    // Redirect to dashboard
+    setTimeout(() => {
+      navigate(userRole === 'mentor' ? '/mentor/dashboard' : '/student/dashboard');
+    }, 2000);
+  };
+
+  // Prevent user from leaving the meeting page
+  useEffect(() => {
+    if (!isConnected) return;
+
+    // Handle browser back button and page navigation
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = 'If you leave the session, it will be marked as expired. Are you sure you want to leave?';
+      return 'If you leave the session, it will be marked as expired. Are you sure you want to leave?';
+    };
+
+    // Handle navigation attempts
+    const handlePopState = (e) => {
+      e.preventDefault();
+      alert('⚠️ If you leave the session, it will be marked as expired. Please end the session properly.');
+      window.history.pushState(null, null, window.location.href);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+    window.history.pushState(null, null, window.location.href);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isConnected]);
 
   useEffect(() => {
     // Initialize ZegoCloud meeting
@@ -117,7 +189,7 @@ const MeetingRoomZego = () => {
           sharedLinks: [
             {
               name: 'Meeting Link',
-              url: window.location.protocol + '//' + window.location.host + window.location.pathname + '?roomId=' + roomId + '&sessionId=' + sessionId + '&userRole=' + userRole,
+              url: window.location.protocol + '//' + window.location.host + window.location.pathname,
             },
           ],
           scenario: {
@@ -132,6 +204,9 @@ const MeetingRoomZego = () => {
             console.log('✅ Joined ZegoCloud room:', roomId);
             setIsConnected(true);
             setParticipants(prev => [...prev, { userId: userId, userName: user.name, userRole }]);
+            
+            // Start 60-minute session timer
+            startSessionTimer();
           },
           
           onLeaveRoom: () => {
@@ -165,7 +240,7 @@ const MeetingRoomZego = () => {
           },
 
           // Apply ZegoCloud theme (change this to switch themes)
-          theme: ZEGO_THEMES.purple, // Options: dark, light, purple, blue, green, red
+          theme: ZEGO_THEMES.dark, // Options: dark, light, purple, blue, green, red
           
           // Apply branding configuration
           branding: ZEGO_BRANDING_CONFIG,
@@ -207,45 +282,120 @@ const MeetingRoomZego = () => {
   }, [roomId, sessionId, user, navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Header */}
-      <div className="bg-gray-800 px-6 py-4 flex items-center justify-between">
+    <div className="h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] flex flex-col overflow-hidden">
+      <style>{`
+        * {
+          box-shadow: none !important;
+        }
+        
+        /* Modern gradient background */
+        body {
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+        
+        /* Override ZegoCloud blue button to gray */
+        button {
+          background-color: #374151 !important;
+          color: #ffffff !important;
+        }
+        
+        button:hover {
+          background-color: #4b5563 !important;
+        }
+        
+        /* Override all blue colors */
+        [style*="blue"],
+        [style*="Blue"],
+        [style*="#0066ff"],
+        [style*="#007bff"],
+        [style*="rgb(0, 102, 255)"],
+        [style*="rgb(0, 123, 255)"] {
+          background-color: #374151 !important;
+          color: #ffffff !important;
+        }
+        
+        /* Remove background from copy/icon buttons */
+        svg {
+          background-color: transparent !important;
+        }
+        
+        [class*="icon"],
+        [class*="copy"],
+        [class*="btn"] svg {
+          background-color: transparent !important;
+        }
+      `}</style>
+      
+      {/* Fixed Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-[#121212] border-b border-gray-700 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <h1 className="text-white text-lg font-semibold">Meeting Room - {userRole}</h1>
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-white text-lg font-bold">Meeting Room</h1>
+              <p className="text-gray-400 text-xs capitalize">{userRole}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2 ml-8 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
             <span className="text-gray-300 text-sm">
               {isConnected ? 'Connected' : 'Connecting...'}
             </span>
           </div>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <span className="text-gray-300 text-sm">Room: {roomId?.slice(-8)}</span>
+        <div className="flex items-center space-x-8">
+          {/* Session Timer */}
+          <div className="flex items-center space-x-3 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-900/40 to-blue-800/40 border border-blue-700/50">
+            <svg className="w-5 h-5 text-blue-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-right">
+              <p className="text-gray-400 text-xs">Session Time</p>
+              <p className={`text-white font-mono font-bold text-sm ${sessionDuration <= 300 ? 'text-red-400 animate-pulse' : 'text-blue-400'}`}>
+                {Math.floor(sessionDuration / 60)}:{String(sessionDuration % 60).padStart(2, '0')}
+              </p>
+            </div>
+          </div>
+          
+          <div className="text-right">
+            <p className="text-gray-400 text-xs">Room ID</p>
+            <p className="text-white font-mono text-sm">{roomId?.slice(-8)}</p>
+          </div>
         </div>
       </div>
 
-      {/* ZegoCloud Meeting Container */}
-      <div className="flex-1 h-screen">
+      {/* Content Area */}
+      <div className="flex-1 mt-24 overflow-hidden">
         {ZEGO_CONFIG.appID ? (
           <div 
             ref={meetingContainerRef} 
             className="w-full h-full"
-            style={{ height: 'calc(100vh - 80px)' }}
+            style={{}}
           />
         ) : (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-white text-center">
-              <h2 className="text-xl font-bold mb-4">ZegoCloud Configuration Required</h2>
-              <p className="text-gray-400 mb-4">
-                Please provide your ZegoCloud App ID and Server Secret to enable video calling.
+          <div className="flex items-center justify-center" style={{ minHeight: '700px' }}>
+            <div className="text-center max-w-md mx-auto">
+              <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-800 border border-gray-700">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Configuration Required</h2>
+              <p className="text-gray-400 mb-6">
+                ZegoCloud credentials are not configured. Please update the configuration.
               </p>
-              <div className="bg-gray-800 p-4 rounded-lg text-left">
-                <p className="text-sm text-gray-300 mb-2">Update the configuration in MeetingRoomZego.jsx:</p>
-                <code className="text-green-400 text-sm">
+              <div className="bg-gray-800 border border-gray-700 p-4 rounded-xl text-left">
+                <p className="text-sm text-gray-300 mb-3 font-mono">MeetingRoomZego.jsx</p>
+                <code className="text-gray-300 text-xs leading-relaxed block">
                   const ZEGO_CONFIG = {`{`}<br/>
                   &nbsp;&nbsp;appID: YOUR_APP_ID,<br/>
-                  &nbsp;&nbsp;serverSecret: "YOUR_SERVER_SECRET",<br/>
+                  &nbsp;&nbsp;serverSecret: "YOUR_SECRET",<br/>
                   {`}`}
                 </code>
               </div>

@@ -7,6 +7,72 @@ import KarmaPointsCard from '../components/KarmaPointsCard/KarmaPointsCard';
 import { formatDistanceToNow } from 'date-fns';
 import { fetchStudentTasks } from '../services/studentTasksApi';
 
+// Mentor Card Component with Availability
+const MentorCard = ({ mentor, onNavigate }) => {
+  const [availability, setAvailability] = useState(null);
+  const [loadingAvail, setLoadingAvail] = useState(true);
+
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:4000/api/mentor-availability/latest/${mentor._id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        if (data.success && data.data) {
+          setAvailability(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching availability:', error);
+      } finally {
+        setLoadingAvail(false);
+      }
+    };
+    fetchAvailability();
+  }, [mentor._id]);
+
+  const getInitials = (name) => {
+    if (!name) return '??';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  };
+
+  const formatLastInteraction = (dateString) => {
+    if (!dateString) return 'Just now';
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch (e) {
+      return 'Some time ago';
+    }
+  };
+
+  return (
+    <div className="flex flex-col space-y-2 p-3 bg-[#202327] rounded-lg hover:bg-[#2a2d32] transition-colors cursor-pointer" onClick={() => onNavigate(`/mentor/${mentor._id}`)}>
+      <div className="flex items-center space-x-3">
+        <div className="relative">
+          {mentor.hasConfirmedSession && (<div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#121212] z-10"></div>)}
+          <div className="h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-sm">
+            {mentor.profilePicture ? (<img src={mentor.profilePicture} alt={mentor.name} className="h-full w-full rounded-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.textContent = getInitials(mentor.name); }} />) : (<span>{getInitials(mentor.name)}</span>)}
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-medium text-sm truncate">{mentor.name}</p>
+          <p className="text-gray-400 text-xs">{mentor.title || 'Mentor'}</p>
+        </div>
+        <span className="text-xs bg-gray-600 text-white px-2 py-0.5 rounded-full whitespace-nowrap">{formatLastInteraction(mentor.lastInteraction)}</span>
+      </div>
+      {!loadingAvail && availability && (
+        <div className="flex items-center space-x-2 text-xs">
+          <FiCalendar className="w-3 h-3 text-green-400" />
+          <span className="text-green-400 font-medium">{availability.timeSlots?.length || 0} slots available</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const UserDashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -279,8 +345,8 @@ const UserDashboard = () => {
       const data = await response.json();
 
       if (data.success) {
-        const meetingUrl = `/meeting?roomId=${data.data.roomId}&sessionId=${data.data.sessionId}&userRole=${data.data.userRole}`;
-        window.open(meetingUrl, '_blank', 'width=1200,height=800');
+        const meetingUrl = `/student/meeting/${encodeURIComponent(data.data.roomId)}/${data.data.sessionId}`;
+        navigate(meetingUrl);
       } else {
         alert(data.message || 'Failed to join session');
       }
@@ -397,7 +463,7 @@ const UserDashboard = () => {
 
   return (
     <div className="h-screen bg-[#000000] text-white overflow-hidden flex flex-col">
-      <style jsx>{`
+      <style>{`
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -472,7 +538,7 @@ const UserDashboard = () => {
           </aside>
 
           {/* MIDDLE COLUMN - Main Content OR Profile Form */}
-          <main className="col-span-7 space-y-3 overflow-y-scroll custom-scroll h-full max-h-[calc(100vh-6rem)]">
+          <main className="col-span-7 space-y-3 overflow-y-scroll scrollbar-hide h-full max-h-[calc(100vh-6rem)]">
             {showProfileForm ? (
               <div className="bg-[#121212] rounded-lg shadow border border-gray-700 flex flex-col h-full max-h-[calc(100vh-7rem)]">
                 <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-700">
@@ -690,19 +756,7 @@ const UserDashboard = () => {
                   ) : mentors.length > 0 ? (
                     <div className="space-y-3">
                       {mentors.slice(0, 2).map((mentor) => (
-                        <div key={mentor._id} className="flex items-center space-x-3 p-3 bg-[#202327] rounded-lg hover:bg-[#2a2d32] transition-colors cursor-pointer" onClick={() => navigate(`/mentor/${mentor._id}`)}>
-                          <div className="relative">
-                            {mentor.hasConfirmedSession && (<div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#121212] z-10"></div>)}
-                            <div className="h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-sm">
-                              {mentor.profilePicture ? (<img src={mentor.profilePicture} alt={mentor.name} className="h-full w-full rounded-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.textContent = getInitials(mentor.name); }} />) : (<span>{getInitials(mentor.name)}</span>)}
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white font-medium text-sm truncate">{mentor.name}</p>
-                            <p className="text-gray-400 text-xs">{mentor.title || 'Mentor'}</p>
-                          </div>
-                          <span className="text-xs bg-gray-600 text-white px-2 py-0.5 rounded-full whitespace-nowrap">{formatLastInteraction(mentor.lastInteraction)}</span>
-                        </div>
+                        <MentorCard key={mentor._id} mentor={mentor} onNavigate={navigate} />
                       ))}
                     </div>
                   ) : (

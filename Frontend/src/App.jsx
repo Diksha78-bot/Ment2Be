@@ -22,6 +22,10 @@ import NotFoundPage from './assets/NotFoundPage';
 import ProfileCompletionPage from './pages/ProfileCompletionPage';
 import StudentTaskPage from './pages/StudentTaskPage';
 import KarmaTest from './components/KarmaTest';
+import { ForumPage } from './components/Forum/ForumPage';
+import StudentForumPage from './pages/StudentForumPage';
+import MentorJournalPage from './pages/MentorJournalPage';
+import QuestionDetailPage from './pages/QuestionDetailPage';
 
 function App() {
   const location = useLocation();
@@ -44,12 +48,16 @@ function App() {
         <Route path="/student/chat" element={<ChatPage />} />
         <Route path="/student/sessions" element={<SessionsPage />} />
         <Route path="/student/profile" element={<ProfilePage />} />
+        <Route path="/student/forum" element={<StudentForumPage />} />
+        <Route path="/student/forum/question/:questionId" element={<QuestionDetailPage />} />
         <Route path="/complete-profile" element={<ProfileCompletionPage />} />
         <Route path="/mentor-profile" element={<MentorDetailPage />} />
         <Route path="/booking" element={<BookSession />} />
         <Route path="/student/tasks" element={<StudentTaskPage />} />
 
-        {/* Meeting Route */}
+        {/* Meeting Routes */}
+        <Route path="/student/meeting/:roomId/:sessionId" element={<MeetingRoomZego />} />
+        <Route path="/mentor/meeting/:roomId/:sessionId" element={<MeetingRoomZego />} />
         <Route path="/meeting" element={<MeetingRoomZego />} />
 
         {/* Mentor Routes */}
@@ -60,6 +68,9 @@ function App() {
         <Route path="/mentor/get-mentees" element={<MentorGetMenteesPage />} />
         <Route path="/mentor/profile" element={<MentorProfilePage />} />
         <Route path="/mentor/profile-setup" element={<MentorProfileSetup />} />
+        <Route path="/mentor/forum" element={<ForumPage />} />
+        <Route path="/mentor/forum/question/:questionId" element={<QuestionDetailPage />} />
+        <Route path="/mentor/journal" element={<MentorJournalPage />} />
 
         {/* Testing Route */}
         <Route path="/karma-test" element={<KarmaTest />} />

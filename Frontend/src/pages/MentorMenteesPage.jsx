@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiCalendar, FiClock, FiUser, FiDollarSign, FiEye, FiMapPin, FiRefreshCw, FiMessageSquare, FiVideo, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiUser, FiDollarSign, FiEye, FiMapPin, FiRefreshCw, FiMessageSquare, FiVideo, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiChevronLeft, FiChevronRight, FiCheck } from 'react-icons/fi';
 import MentorNavbar from '../components/MentorDashboard/Navbar';
 import { StudentSessionCard } from '../components/MentorDashboard/StudentSessionCard';
 
@@ -277,19 +277,17 @@ const MentorMenteesPage = () => {
       // Generate room ID for ZegoCloud (use session ID as room ID)
       const roomId = session.roomId || `session_${session._id}`;
       const sessionId = session._id;
-      const userRole = 'mentor'; // Since this is mentor mentees page
 
       console.log('ZegoCloud meeting details:', {
         roomId,
         sessionId,
-        userRole,
         userName: user.name
       });
 
       // Open ZegoCloud meeting page
-      const meetingUrl = `/meeting?roomId=${roomId}&sessionId=${sessionId}&userRole=${userRole}`;
+      const meetingUrl = `/mentor/meeting/${encodeURIComponent(roomId)}/${sessionId}`;
       console.log('Opening ZegoCloud meeting URL:', meetingUrl);
-      window.open(meetingUrl, '_blank');
+      navigate(meetingUrl);
 
     } catch (error) {
       console.error('Error joining ZegoCloud session:', error);
@@ -729,7 +727,7 @@ const MentorMenteesPage = () => {
                           {bookings.length > 0 ? Math.round((bookings.filter(b => b.status === 'completed').length / bookings.length) * 100) : 0}%
                         </span>
                       </div>
-                      <div className="w-full bg-[#202327] rounded-full h-2">
+                      <div className="w-full bg-gray-700 rounded-full h-2">
                         <div 
                           className="bg-green-500 h-2 rounded-full" 
                           style={{width: `${bookings.length > 0 ? Math.round((bookings.filter(b => b.status === 'completed').length / bookings.length) * 100) : 0}%`}}
@@ -744,23 +742,112 @@ const MentorMenteesPage = () => {
                     </div>
                   </div>
 
-                  {/* Quick Actions */}
+                  {/* Availability & Time Slots */}
                   <div className="bg-[#121212] border border-gray-700 rounded-xl p-6 shadow-lg">
-                    <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
-                    <div className="space-y-3">
-                      <button className="w-full bg-white text-black py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center gap-2">
-                        <FiCalendar className="w-4 h-4" />
-                        Schedule New Session
-                      </button>
-                      <button className="w-full bg-[#202327] border border-[#404040] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#2a2d32] transition-colors flex items-center gap-2">
-                        <FiMessageSquare className="w-4 h-4" />
-                        Send Bulk Message
-                      </button>
-                      <button className="w-full bg-[#202327] border border-[#404040] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#2a2d32] transition-colors flex items-center gap-2">
-                        <FiEye className="w-4 h-4" />
-                        View All Sessions
-                      </button>
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <FiClock className="w-5 h-5 text-blue-500" />
+                        Set Your Availability
+                      </h3>
+                      <span className="text-xs bg-green-900/30 text-green-400 px-2 py-1 rounded-full">Active</span>
                     </div>
+                    
+                    {/* Date Picker */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Select Date</label>
+                      <input 
+                        type="date" 
+                        id="availabilityDate"
+                        className="w-full bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Time Slots */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-300 mb-3">Available Time Slots</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'].map((time) => (
+                          <button
+                            key={time}
+                            type="button"
+                            onClick={(e) => {
+                              e.target.classList.toggle('bg-blue-600');
+                              e.target.classList.toggle('border-blue-500');
+                              e.target.classList.toggle('text-white');
+                              e.target.classList.toggle('bg-gray-800');
+                              e.target.classList.toggle('border-gray-600');
+                              e.target.classList.toggle('text-gray-300');
+                            }}
+                            className="px-3 py-2 bg-gray-800 border border-gray-600 text-gray-300 rounded-lg hover:bg-blue-900 hover:border-blue-500 hover:text-blue-300 transition-all text-sm font-medium"
+                            data-time={time}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Session Duration */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Session Duration</label>
+                      <select id="sessionDuration" className="w-full bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="30">30 minutes</option>
+                        <option value="45">45 minutes</option>
+                        <option value="60">60 minutes</option>
+                        <option value="90">90 minutes</option>
+                      </select>
+                    </div>
+
+                    {/* Save Button */}
+                    <button 
+                      type="button"
+                      onClick={async () => {
+                        const date = document.getElementById('availabilityDate').value;
+                        const duration = document.getElementById('sessionDuration').value;
+                        const selectedTimes = Array.from(document.querySelectorAll('[data-time]'))
+                          .filter(btn => btn.classList.contains('bg-blue-600'))
+                          .map(btn => btn.getAttribute('data-time'));
+                        
+                        if (!date || selectedTimes.length === 0) {
+                          alert('Please select a date and at least one time slot');
+                          return;
+                        }
+                        
+                        try {
+                          const token = localStorage.getItem('token');
+                          const response = await fetch('http://localhost:4000/api/mentor-availability', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                              date,
+                              timeSlots: selectedTimes,
+                              duration: parseInt(duration)
+                            })
+                          });
+                          
+                          const data = await response.json();
+                          if (data.success) {
+                            alert('✅ Availability saved successfully!');
+                            document.getElementById('availabilityDate').value = '';
+                            document.querySelectorAll('[data-time]').forEach(btn => {
+                              btn.classList.remove('bg-blue-600', 'border-blue-500', 'text-white');
+                              btn.classList.add('bg-gray-800', 'border-gray-600', 'text-gray-300');
+                            });
+                          } else {
+                            alert(data.message || 'Failed to save availability');
+                          }
+                        } catch (error) {
+                          console.error('Error saving availability:', error);
+                          alert('Failed to save availability');
+                        }
+                      }}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+                      <FiCheck className="w-4 h-4" />
+                      Save Availability
+                    </button>
                   </div>
                 </div>
               </div>

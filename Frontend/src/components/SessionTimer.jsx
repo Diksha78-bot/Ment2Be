@@ -344,7 +344,7 @@ const SessionTimer = ({ session, onJoinSession, onSessionExpired, userRole = 'st
         {!timing.isExpired && (
           <button
             onClick={() => onJoinSession(session)}
-            className="w-full inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors bg-[#535353] hover:bg-white hover:text-black text-white border border-gray-600"
+            className="w-full inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors bg-[#2a3038] hover:bg-[#323a44] text-white border border-gray-600/50"
           >
             <FiVideo className="w-4 h-4 mr-2" />
             Join Session (Test Mode)
@@ -355,11 +355,7 @@ const SessionTimer = ({ session, onJoinSession, onSessionExpired, userRole = 'st
         {timing.canJoin && !timing.isExpired && (
           <button
             onClick={() => onJoinSession(session)}
-            className={`w-full inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors border border-gray-600 ${
-              timing.isInProgress 
-                ? 'bg-green-700 hover:bg-green-600 text-white'
-                : 'bg-orange-700 hover:bg-orange-600 text-white'
-            }`}
+            className="w-full inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors bg-[#2a3038] hover:bg-[#323a44] text-white border border-gray-600/50"
           >
             <FiVideo className="w-4 h-4 mr-2" />
             {timing.isInProgress ? 'Join Session (Live)' : 'Join Session (Starting Soon)'}

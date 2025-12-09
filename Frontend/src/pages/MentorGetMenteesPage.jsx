@@ -15,7 +15,7 @@ const MentorGetMenteesPage = () => {
   }, [navigate]);
 
   return (
-    <div className="h-screen bg-[#202327] overflow-hidden flex flex-col">
+    <div className="h-screen bg-[#000000] overflow-hidden flex flex-col pt-14">
       <MentorNavbar userName={user?.name || 'Mentor'} />
       <div className="flex-1 overflow-hidden">
         <ForumPage />

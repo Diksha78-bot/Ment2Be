@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Home, Compass, BookOpen, MessageCircle, Clock, ListChecks, Menu, X, LogOut } from 'lucide-react';
+import { Home, Compass, BookOpen, MessageCircle, Clock, ListChecks, Menu, X, LogOut, MessageSquare } from 'lucide-react';
 import UserProfileSidebar from '../UserProfileSidebar';
 
 const Navbar = ({ userName = 'Student' }) => {
@@ -36,6 +36,7 @@ const Navbar = ({ userName = 'Student' }) => {
     { label: 'Messages', href: '/student/chat', icon: MessageCircle },
     { label: 'Bookings', href: '/student/sessions', icon: Clock },
     { label: 'My Tasks', href: '/student/tasks', icon: ListChecks },
+    { label: 'Ask Questions', href: '/student/forum', icon: MessageSquare },
   ];
 
   return (
