@@ -61,10 +61,10 @@ export function ChatList({ conversations, activeConversationId, onSelectConversa
             className={cn(
               "w-full p-3 mx-2 mb-1 rounded-xl flex items-start gap-3 transition-all duration-200 text-left",
               activeConversationId === conversation.id
-                ? "bg-[#212121] border border-gray-600"
+                ? "border border-gray-600"
                 : "hover:bg-[#212121]/50 border border-transparent",
             )}
-            style={{ width: "calc(100% - 16px)" }}
+            style={activeConversationId === conversation.id ? { width: "calc(100% - 16px)", backgroundColor: "#2a2d32" } : { width: "calc(100% - 16px)" }}
           >
             {/* Avatar with online indicator */}
             <div className="relative flex-shrink-0">

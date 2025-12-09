@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FiArrowLeft, FiCalendar, FiClock, FiUser, FiDollarSign } from 'react-icons/fi';
 import Navbar from '../components/StudentDashboard/Navbar';
+import { getAvailableSlots } from '../services/availabilityService';
 
 const BookSession = () => {
   const navigate = useNavigate();
@@ -96,24 +97,20 @@ const BookSession = () => {
     setFormData(prev => ({ ...prev, sessionDate: date }));
     setSelectedTimeSlot(''); // Reset time slot when date changes
     
-    // Fetch available time slots for this date
+    // Fetch available time slots for this date from mentor's availability using service
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:4000/api/mentor-availability/${mentorId}?date=${date}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Use availability service instead of direct fetch
+      const data = await getAvailableSlots(mentorId, date);
       
-      const data = await response.json();
       console.log('📅 Availability API Response:', data);
       console.log('📋 Available slots:', data.availableSlots);
       
-      if (data.success && data.availableSlots) {
+      // Get only the available (not booked) slots from mentor's availability
+      if (data.success && data.availableSlots && Array.isArray(data.availableSlots)) {
+        // availableSlots is an array of start times like ['09:00 AM', '10:00 AM']
         setAvailableTimeSlots(data.availableSlots);
       } else {
+        // No availability set for this date
         setAvailableTimeSlots([]);
       }
     } catch (error) {
@@ -235,10 +232,11 @@ const BookSession = () => {
     return days;
   };
 
-  const timeSlots = [
-    '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
-    '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM',
-    '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM'
+  // All possible time slots - will be filtered based on mentor's availability
+  const allTimeSlots = [
+    '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
+    '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM',
+    '05:00 PM', '06:00 PM', '07:00 PM', '08:00 PM'
   ];
 
   const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
@@ -525,7 +523,8 @@ const BookSession = () => {
                   
                   {/* Preset Time Slots */}
                   <div className="grid grid-cols-3 gap-1.5">
-                    {timeSlots.map((time) => {
+                    {allTimeSlots.map((time) => {
+                      // Check if this time is in the mentor's available slots for the selected date
                       const isAvailable = selectedDate && availableTimeSlots.includes(time);
                       return (
                         <button

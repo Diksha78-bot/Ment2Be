@@ -63,9 +63,10 @@ const MentorNavbar = ({ userName = 'Mentor' }) => {
                   to={item.href}
                   className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 ${
                     isActive 
-                      ? 'bg-gray-600 text-white' 
+                      ? 'text-white' 
                       : 'bg-gray-800/40 text-gray-300 hover:bg-gray-700/60 hover:text-white'
                   }`}
+                  style={isActive ? { backgroundColor: '#2a2d32' } : {}}
                   title={item.label}
                 >
                   <Icon 
@@ -110,9 +111,10 @@ const MentorNavbar = ({ userName = 'Mentor' }) => {
                   onClick={() => setIsMenuOpen(false)}
                   className={`w-full block px-3 py-2 rounded-lg transition-colors text-xs ${
                     location.pathname === item.href
-                      ? 'bg-gray-700 text-white'
+                      ? 'text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-cyan-400'
                   }`}
+                  style={location.pathname === item.href ? { backgroundColor: '#2a2d32' } : {}}
                 >
                   <div className="flex items-center gap-2">
                     <Icon size={16} className={item.color} />

@@ -29,6 +29,7 @@ com\app\utils\JwtUtil.class
 com\app\model\Question.class
 com\app\chat\ChatController$Message.class
 com\app\controllers\TaskController$5.class
+com\app\controllers\AvailabilityController.class
 com\app\repositories\TaskRepository.class
 com\app\repository\ConversationRepository.class
 com\app\chat\ChatController$ConversationsResponse.class
@@ -47,6 +48,7 @@ com\app\chat\ChatController$MessageRequest.class
 com\app\models\Task.class
 com\app\chat\ChatController$Conversation.class
 com\app\HomeController.class
+com\app\model\Availability$TimeSlot.class
 com\app\controllers\TaskController$10.class
 com\app\controllers\TaskController$20.class
 com\app\repository\UserRepository.class
@@ -60,8 +62,10 @@ com\app\controllers\TaskController$21.class
 com\app\model\Conversation.class
 com\app\model\MentorProfile.class
 com\app\config\MongoConfig.class
+com\app\repository\AvailabilityRepository.class
 com\app\AppApplication.class
 com\app\model\Conversation$Message.class
+com\app\model\Availability.class
 com\app\repository\MessageRepository.class
 com\app\chat\ChatController$ConversationListResponse.class
 com\app\controllers\TaskController$3.class

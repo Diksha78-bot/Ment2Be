@@ -10,13 +10,16 @@ E:\K23DX Project\JavaMaven\src\main\java\com\app\karma\KarmaAspect.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\repository\UserRepository.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\HomeController.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\chat\ChatController.java
+E:\K23DX Project\JavaMaven\src\main\java\com\app\model\Availability.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\service\QuestionService.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\karma\KarmaController.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\repository\QuestionRepository.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\repository\MentorProfileRepository.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\model\Message.java
+E:\K23DX Project\JavaMaven\src\main\java\com\app\repository\AvailabilityRepository.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\repository\MessageRepository.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\config\MongoConfig.java
+E:\K23DX Project\JavaMaven\src\main\java\com\app\controllers\AvailabilityController.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\controllers\TaskController.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\service\ConversationService.java
 E:\K23DX Project\JavaMaven\src\main\java\com\app\model\User.java
