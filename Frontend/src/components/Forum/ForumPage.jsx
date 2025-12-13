@@ -21,11 +21,11 @@ import {
 } from "lucide-react"
 
 const domains = [
-  { id: "for-you", label: "For You", icon: Zap },
-  { id: "engineering", label: "Engineering", icon: Monitor },
-  { id: "data-science", label: "Data Science", icon: BarChart3 },
-  { id: "business", label: "Business", icon: Briefcase },
-  { id: "product", label: "Product", icon: Lightbulb },
+  { id: "for-you", label: "For You", icon: Zap, color: "text-yellow-400" },
+  { id: "engineering", label: "Engineering", icon: Monitor, color: "text-blue-400" },
+  { id: "data-science", label: "Data Science", icon: BarChart3, color: "text-purple-400" },
+  { id: "business", label: "Business", icon: Briefcase, color: "text-green-400" },
+  { id: "product", label: "Product", icon: Lightbulb, color: "text-orange-400" },
 ]
 
 export function ForumPage() {
@@ -128,15 +128,14 @@ export function ForumPage() {
               }
             `}</style>
             {/* Header */}
-            <h1 className="text-2xl font-bold text-white mb-2">Forum - Ask Mentor Anything</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">Answer Questions to Discover Relevant Mentees</h1>
             <p className="text-[#b3b3b3] mb-6">
-              Answering doubts posed by mentees to aid in their preparation not only benefits them but also helps you
-              build a stronger profile, consequently leading to more trial bookings.
+              Help mentees with their questions and build meaningful connections. Every answer you provide helps you discover students who need your expertise and increases your chances of getting more bookings.
             </p>
 
             {/* Search Bar */}
             <div className="relative mb-8">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-500" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-cyan-400" />
               <input
                 type="text"
                 placeholder="Search Questions Here"
@@ -163,7 +162,7 @@ export function ForumPage() {
                           : "border-[#404040] text-[#b3b3b3] hover:border-blue-300 bg-[#121212]"
                       }`}
                     >
-                      <Icon className="h-6 w-6 mb-2" />
+                      <Icon className={`h-6 w-6 mb-2 ${domain.color}`} />
                       <span className="text-sm font-medium">{domain.label}</span>
                     </button>
                   )
@@ -267,8 +266,24 @@ export function ForumPage() {
                     <div key={question._id || question.id} className="p-5 border border-[#404040] rounded-lg bg-[#121212]">
                       {/* Author Info */}
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-blue-600 text-xs font-medium">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {question.author?.profilePicture ? (
+                            <img 
+                              src={question.author.profilePicture} 
+                              alt={authorName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                if (e.target.nextElementSibling) {
+                                  e.target.nextElementSibling.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <span 
+                            style={{ display: question.author?.profilePicture ? 'none' : 'flex' }}
+                            className="text-blue-600 text-xs font-medium w-full h-full flex items-center justify-center bg-blue-100"
+                          >
                             {authorInitials}
                           </span>
                         </div>
@@ -326,38 +341,74 @@ export function ForumPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="w-80 shrink-0 space-y-4 overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="w-80 shrink-0 space-y-4 overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', maxHeight: 'calc(100vh - 120px)' }}>
             <style>{`
               div::-webkit-scrollbar {
                 display: none;
               }
             `}</style>
-            {/* Getting Mentees Card */}
+            {/* Top Mentors Card */}
             <div className="p-4 border border-[#404040] rounded-lg bg-[#121212]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
-                    <Play className="h-4 w-4 text-white fill-white ml-0.5" />
+              <h3 className="font-semibold text-white mb-3">Top Mentors</h3>
+              {(() => {
+                // Get all mentors from answers and count their answers
+                const mentorMap = {};
+                filteredQuestions.forEach(question => {
+                  question.answers?.forEach(answer => {
+                    const mentorId = answer.author?._id || answer.author?.name;
+                    if (!mentorMap[mentorId]) {
+                      mentorMap[mentorId] = {
+                        name: answer.author?.name,
+                        profilePicture: answer.author?.profilePicture,
+                        answerCount: 0
+                      };
+                    }
+                    mentorMap[mentorId].answerCount += 1;
+                  });
+                });
+                
+                const topMentors = Object.values(mentorMap)
+                  .sort((a, b) => b.answerCount - a.answerCount)
+                  .slice(0, 3);
+                
+                return topMentors.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-400 text-sm">No mentors yet</p>
                   </div>
-                  <span className="font-medium text-white">Getting Mentees through Forum</span>
-                </div>
-                <ArrowUpRight className="h-5 w-5 text-[#b3b3b3]" />
-              </div>
-            </div>
-
-            {/* User Profile Card */}
-            <div className="p-4 border border-[#404040] rounded-lg bg-[#121212]">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
-                  <span className="text-amber-700 font-medium">
-                    {user?.name ? user.name.split(' ').map(n => n[0]).join('') : 'RD'}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white">{user?.name || 'Raghu Datta'}</h3>
-                  <p className="text-sm text-blue-500">Mentor</p>
-                </div>
-              </div>
+                ) : (
+                  <div className="space-y-2">
+                    {topMentors.map((mentor, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-2 hover:bg-[#1a1a1a] rounded cursor-pointer transition-colors">
+                        <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {mentor.profilePicture ? (
+                            <img 
+                              src={mentor.profilePicture} 
+                              alt={mentor.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                if (e.target.nextElementSibling) {
+                                  e.target.nextElementSibling.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <span 
+                            style={{ display: mentor.profilePicture ? 'none' : 'flex' }}
+                            className="text-white font-medium text-sm w-full h-full flex items-center justify-center bg-blue-500"
+                          >
+                            {mentor.name ? mentor.name.split(' ').map(n => n[0]).join('') : '?'}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-white text-sm font-medium truncate">{mentor.name || 'Unknown'}</p>
+                          <p className="text-xs text-gray-400">{mentor.answerCount} answers</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* My Answers Card */}
@@ -377,14 +428,14 @@ export function ForumPage() {
               </div>
               <div className="relative z-10">
                 <h3 className="font-semibold text-white mb-2">My Answers</h3>
-                <p className="text-4xl font-bold text-white mb-2">0</p>
-                <a href="#" className="text-blue-500 text-sm flex items-center gap-1 hover:underline">
-                  View My Answers <ArrowRight className="h-4 w-4" />
-                </a>
+                <p className="text-4xl font-bold text-white mb-2">
+                  {questions.reduce((sum, q) => sum + (q.answers?.length || 0), 0)}
+                </p>
+                <div className="text-3xl">💬</div>
               </div>
             </div>
 
-            {/* Requested Answers Card */}
+            {/* Reputation Card */}
             <div className="p-4 border border-[#404040] rounded-lg bg-[#121212] overflow-hidden relative">
               <div className="absolute top-0 right-0 w-32 h-full opacity-60">
                 <div
@@ -400,17 +451,82 @@ export function ForumPage() {
                 />
               </div>
               <div className="relative z-10">
-                <h3 className="font-semibold text-white mb-2">Requested Answers</h3>
-                <p className="text-4xl font-bold text-white mb-2">0</p>
-                <a href="#" className="text-blue-500 text-sm flex items-center gap-1 hover:underline">
-                  View Requested Answers <ArrowRight className="h-4 w-4" />
-                </a>
+                <h3 className="font-semibold text-white mb-2">Your Reputation</h3>
+                <p className="text-4xl font-bold text-white mb-2">
+                  {(() => {
+                    // Calculate reputation: +10 for each question asked, +25 for each answer given
+                    const userQuestions = filteredQuestions.filter(q => q.author?.name === user?.name).length;
+                    const userAnswers = filteredQuestions.reduce((sum, q) => {
+                      return sum + (q.answers?.filter(a => a.author?.name === user?.name).length || 0);
+                    }, 0);
+                    return (userQuestions * 10) + (userAnswers * 25);
+                  })()}
+                </p>
+                <div className="text-3xl">⭐</div>
               </div>
             </div>
 
             {/* Leaderboard Card */}
             <div className="p-4 border border-[#404040] rounded-lg bg-[#121212]">
-              <h3 className="font-semibold text-white">Leaderboard</h3>
+              <h3 className="font-semibold text-white mb-3">Leaderboard</h3>
+              {(() => {
+                // Get all mentees who asked questions and count their questions
+                const menteeMap = {};
+                filteredQuestions.forEach(question => {
+                  const menteeId = question.author?._id || question.author?.name;
+                  if (!menteeMap[menteeId]) {
+                    menteeMap[menteeId] = {
+                      name: question.author?.name,
+                      profilePicture: question.author?.profilePicture,
+                      questionCount: 0
+                    };
+                  }
+                  menteeMap[menteeId].questionCount += 1;
+                });
+                
+                const topMentee = Object.values(menteeMap)
+                  .sort((a, b) => b.questionCount - a.questionCount)
+                  .slice(0, 1);
+                
+                return topMentee.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-400 text-sm">No leaders yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {topMentee.map((mentee, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-2 bg-[#1a1a1a] rounded">
+                        <div className="text-yellow-400 font-bold text-lg">🏆</div>
+                        <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {mentee.profilePicture ? (
+                            <img 
+                              src={mentee.profilePicture} 
+                              alt={mentee.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                if (e.target.nextElementSibling) {
+                                  e.target.nextElementSibling.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <span 
+                            style={{ display: mentee.profilePicture ? 'none' : 'flex' }}
+                            className="text-white font-medium text-xs w-full h-full flex items-center justify-center bg-blue-500"
+                          >
+                            {mentee.name ? mentee.name.split(' ').map(n => n[0]).join('') : '?'}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{mentee.name || 'Unknown'}</p>
+                          <p className="text-xs text-gray-400">{mentee.questionCount} questions</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

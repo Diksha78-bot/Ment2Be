@@ -56,6 +56,38 @@ public class KarmaService {
     }
 
     /**
+     * Calculate karma points based on profile completion progress
+     * Awards karma proportionally based on how complete the profile is
+     * Only awards full points (50) when profile is 100% complete
+     * Awards partial points based on completion percentage
+     */
+    public int calculateProfileProgressKarma(int completionPercentage, int completedFields, int totalFields) {
+        logger.info("Calculating profile progress karma for {}% completion ({}/{} fields)", 
+            completionPercentage, completedFields, totalFields);
+        
+        // Base karma for reaching 75% threshold (minimum for "complete" status)
+        int baseKarma = 25;
+        
+        // Bonus karma for each 5% above 75%
+        int bonusKarma = 0;
+        if (completionPercentage > 75) {
+            int percentageAboveThreshold = completionPercentage - 75;
+            bonusKarma = (percentageAboveThreshold / 5) * 5; // 5 points per 5% above threshold
+        }
+        
+        // Full completion bonus (100%)
+        if (completionPercentage == 100) {
+            bonusKarma += 10; // Extra bonus for 100% completion
+        }
+        
+        int totalKarma = baseKarma + bonusKarma;
+        logger.info("Profile progress karma calculated: {} points (base: {}, bonus: {})", 
+            totalKarma, baseKarma, bonusKarma);
+        
+        return totalKarma;
+    }
+
+    /**
      * Calculate total karma based on user actions
      */
     public int calculateTotalKarma(KarmaCalculationRequest request) {

@@ -83,6 +83,16 @@ const ProfileSidebar = ({ mentorData, onBookSession }) => {
           </div>
         </div>
 
+        {/* Availability Status Badges */}
+        <div className="flex items-center gap-2 mb-4">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: '#da8c18' }}>
+            1 available
+          </span>
+          <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: '#da8c18' }}>
+            1 unavailable
+          </span>
+        </div>
+
         <button 
           onClick={onBookSession}
           className="w-full bg-green-600 text-white py-2.5 px-4 rounded-md hover:bg-green-700 transition-colors font-medium flex items-center justify-center"

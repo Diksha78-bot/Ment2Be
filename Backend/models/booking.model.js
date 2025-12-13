@@ -43,6 +43,16 @@ const bookingSchema = new mongoose.Schema({
     required: true,
     default: 60 // Duration in minutes
   },
+  actualDuration: {
+    type: Number,
+    default: 0 // Actual session duration in seconds (tracked when session ends)
+  },
+  sessionStartedAt: {
+    type: Date // When the session actually started
+  },
+  sessionEndedAt: {
+    type: Date // When the session actually ended
+  },
   timezone: {
     type: String,
     default: 'Asia/Kolkata'

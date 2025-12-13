@@ -82,7 +82,7 @@ export function ChatHeader({
             )}
             {sessionTime && (
               <div className="flex items-center text-xs text-gray-400">
-                <Clock className="h-3 w-3 mr-1" />
+                <Clock className="h-3 w-3 mr-1 text-cyan-400" />
                 <span>{sessionTime}</span>
               </div>
             )}
@@ -95,7 +95,7 @@ export function ChatHeader({
           className="p-2 rounded-lg text-[#b3b3b3] hover:text-white hover:bg-[#212121] transition-colors"
           title="More options"
         >
-          <MoreVertical className="h-5 w-5" />
+          <MoreVertical className="h-5 w-5 text-gray-400" />
         </button>
       </div>
     </header>

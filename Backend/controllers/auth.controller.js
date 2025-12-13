@@ -19,7 +19,7 @@ const generateToken = (id, role) => {
 
 export async function Register(req, res) {
   try {
-    const { name, email, password, role, bio, hourlyRate } = req.validatedData;
+    const { name, email, password, role, phoneNumber, bio, hourlyRate } = req.validatedData;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -34,6 +34,7 @@ export async function Register(req, res) {
       email,
       password,
       role,
+      ...(phoneNumber && { phoneNumber }),
       ...(bio && { bio }),
       ...(hourlyRate && role === 'mentor' && { hourlyRate })
     });

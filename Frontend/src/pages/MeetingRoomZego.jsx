@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
+import { io } from 'socket.io-client';
 import { 
   ZEGO_UI_CONFIG, 
   ZEGO_STYLE_CONFIG, 
@@ -25,10 +26,15 @@ const MeetingRoomZego = () => {
   const [participants, setParticipants] = useState([]);
   const [sessionDuration, setSessionDuration] = useState(3600); // 60 minutes in seconds
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [showEndedPopup, setShowEndedPopup] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(5);
+  const [sessionStartTime, setSessionStartTime] = useState(null); // Track when session actually started
+  const [endedByOther, setEndedByOther] = useState(null); // Track who ended the session
   
   // Refs
   const meetingContainerRef = useRef(null);
   const isMountedRef = useRef(true);
+  const socketRef = useRef(null);
   
   // Get user info (memoize to prevent re-renders)
   const user = useMemo(() => {
@@ -38,10 +44,10 @@ const MeetingRoomZego = () => {
     return parsedUser;
   }, []);
 
-  // ZegoCloud Configuration - You'll provide these credentials
+  // ZegoCloud Configuration - Load from environment variables
   const ZEGO_CONFIG = {
-    appID: 1797883520, // Replace with your ZegoCloud App ID
-    serverSecret: "998c5a5fd88e6a612fb75f2b488fe56a", // Replace with your ZegoCloud Server Secret
+    appID: parseInt(import.meta.env.VITE_ZEGO_APP_ID || '1797883520'),
+    serverSecret: import.meta.env.VITE_ZEGO_SERVER_SECRET || "998c5a5fd88e6a612fb75f2b488fe56a",
   };
 
   // Start session timer - 60 minutes
@@ -70,37 +76,123 @@ const MeetingRoomZego = () => {
     }, 1000); // Update every second
   };
 
-  // End session automatically
-  const endSession = async () => {
-    console.log('⏰ 60-minute session time has ended. Ending meeting...');
+  // End session - show popup and redirect to journal
+  const endSession = async (isManualLeave = false, triggeredByOther = false) => {
+    // Prevent double-ending
+    if (sessionEnded) return;
+    
+    console.log(isManualLeave ? '👋 User left session manually' : '⏰ 60-minute session time has ended');
     setSessionEnded(true);
+    setShowEndedPopup(true);
     
-    // Show alert to user
-    alert('Your 60-minute session has ended. The meeting will now close.');
+    // Calculate actual session duration
+    const sessionEndTime = new Date();
+    const actualDurationSeconds = sessionStartTime 
+      ? Math.floor((sessionEndTime - sessionStartTime) / 1000) 
+      : 0;
     
-    // Update session status in backend
+    console.log(`📊 Actual session duration: ${actualDurationSeconds} seconds (${Math.floor(actualDurationSeconds / 60)} minutes)`);
+    
+    // Notify other participant via Socket.IO (only if we initiated the end)
+    if (!triggeredByOther && socketRef.current && roomId) {
+      socketRef.current.emit('end-session', {
+        roomId,
+        sessionId,
+        endedBy: user?.id || user?._id,
+        endedByName: user?.name,
+        endedByRole: userRole
+      });
+      console.log('📤 Notified other participant that session ended');
+    }
+    
+    // Update session status in backend with actual duration
     try {
       const token = localStorage.getItem('token');
       if (token && sessionId) {
-        await fetch(`http://localhost:4000/api/bookings/${sessionId}/complete`, {
+        const response = await fetch(`http://localhost:4000/api/bookings/${sessionId}/status`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ status: 'completed' })
+          body: JSON.stringify({ 
+            status: 'completed',
+            actualDuration: actualDurationSeconds,
+            sessionStartedAt: sessionStartTime?.toISOString(),
+            sessionEndedAt: sessionEndTime.toISOString()
+          })
         });
-        console.log('✅ Session marked as completed in database');
+        
+        if (!response.ok) {
+          console.error('Failed to mark session as completed:', await response.text());
+        }
+        console.log('✅ Session marked as completed in database with duration:', actualDurationSeconds);
       }
     } catch (error) {
       console.error('Error updating session status:', error);
     }
     
-    // Redirect to dashboard
-    setTimeout(() => {
-      navigate(userRole === 'mentor' ? '/mentor/dashboard' : '/student/dashboard');
-    }, 2000);
+    // Start countdown for redirect
+    let countdown = 5;
+    const countdownInterval = setInterval(() => {
+      countdown -= 1;
+      setRedirectCountdown(countdown);
+      
+      if (countdown <= 0) {
+        clearInterval(countdownInterval);
+        // Redirect to journal page
+        navigate(userRole === 'mentor' ? '/mentor/journal' : '/student/journal', {
+          state: { sessionId, fromSession: true }
+        });
+      }
+    }, 1000);
   };
+
+  // Socket.IO connection for session sync
+  useEffect(() => {
+    // Connect to Socket.IO server
+    const socket = io('http://localhost:4000');
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('🔌 Connected to Socket.IO for session sync');
+      
+      // Join the room for this session
+      if (roomId && user) {
+        socket.emit('join-room', {
+          roomId,
+          userId: user.id || user._id,
+          userName: user.name,
+          userRole
+        });
+      }
+    });
+
+    // Listen for session ended by other participant
+    socket.on('session-ended', (data) => {
+      console.log('📥 Session ended by other participant:', data);
+      
+      // Only handle if we didn't initiate the end
+      const myUserId = user?.id || user?._id;
+      if (data.endedBy !== myUserId && !sessionEnded) {
+        setEndedByOther({
+          name: data.endedByName,
+          role: data.endedByRole
+        });
+        endSession(true, true); // triggeredByOther = true
+      }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('🔌 Disconnected from Socket.IO');
+    });
+
+    return () => {
+      if (socket) {
+        socket.disconnect();
+      }
+    };
+  }, [roomId, user, userRole]);
 
   // Prevent user from leaving the meeting page
   useEffect(() => {
@@ -156,11 +248,12 @@ const MeetingRoomZego = () => {
       }
 
       try {
-        console.log('Initializing ZegoCloud with:', {
+        console.log('Initializing ZegoCloud 1-on-1 Tutoring with:', {
           appID: ZEGO_CONFIG.appID,
           roomId,
           userId: userId,
-          userName: user.name
+          userName: user.name,
+          mode: 'OneONOneCall'
         });
 
         // Generate Kit Token for authentication
@@ -183,7 +276,7 @@ const MeetingRoomZego = () => {
 
         console.log('ZegoCloud instance created successfully');
 
-        // Configure meeting settings with custom UI
+        // Configure meeting settings with 1-on-1 Tutoring mode
         const meetingConfig = {
           container: meetingContainerRef.current,
           sharedLinks: [
@@ -193,7 +286,7 @@ const MeetingRoomZego = () => {
             },
           ],
           scenario: {
-            mode: ZegoUIKitPrebuilt.VideoConference,
+            mode: ZegoUIKitPrebuilt.OneONOneCall,
           },
           
           // Apply UI configuration from config file
@@ -201,9 +294,13 @@ const MeetingRoomZego = () => {
           
           // Callbacks
           onJoinRoom: () => {
-            console.log('✅ Joined ZegoCloud room:', roomId);
+            console.log('✅ Joined ZegoCloud 1-on-1 Tutoring room:', roomId);
             setIsConnected(true);
             setParticipants(prev => [...prev, { userId: userId, userName: user.name, userRole }]);
+            
+            // Track session start time
+            setSessionStartTime(new Date());
+            console.log('⏱️ Session started at:', new Date().toISOString());
             
             // Start 60-minute session timer
             startSessionTimer();
@@ -212,7 +309,7 @@ const MeetingRoomZego = () => {
           onLeaveRoom: () => {
             console.log('👋 Left ZegoCloud room');
             setIsConnected(false);
-            navigate('/');
+            endSession(true); // Manual leave - show popup and redirect to journal
           },
           
           onUserJoin: (users) => {
@@ -250,9 +347,9 @@ const MeetingRoomZego = () => {
         };
 
         // Join the room
-        console.log('Joining room with config:', meetingConfig);
+        console.log('Joining room with 1-on-1 Tutoring config:', meetingConfig);
         zp.joinRoom(meetingConfig);
-        console.log('✅ Successfully joined ZegoCloud room');
+        console.log('✅ Successfully joined ZegoCloud 1-on-1 Tutoring room');
 
       } catch (error) {
         console.error('❌ Error initializing ZegoCloud meeting:', error);
@@ -267,22 +364,55 @@ const MeetingRoomZego = () => {
       }
     };
 
-    // Initialize with a small delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      if (isMountedRef.current) {
-        initializeMeeting();
-      }
-    }, 1000);
+    // Only initialize once when component mounts
+    if (isMountedRef.current && roomId && user) {
+      const timer = setTimeout(() => {
+        if (isMountedRef.current) {
+          initializeMeeting();
+        }
+      }, 500);
 
-    // Cleanup
-    return () => {
-      clearTimeout(timer);
-      isMountedRef.current = false;
-    };
-  }, [roomId, sessionId, user, navigate]);
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, []);
 
   return (
     <div className="h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] flex flex-col overflow-hidden">
+      {/* Session Ended Popup */}
+      {showEndedPopup && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#121212] border border-gray-700 rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
+              <svg className="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-3">Session Ended</h2>
+            <p className="text-gray-400 mb-6">
+              {endedByOther 
+                ? `${endedByOther.name} (${endedByOther.role}) has ended the session. You're being redirected to your journal.`
+                : "Your mentoring session has ended successfully. You're being redirected to your journal to record your session insights."
+              }
+            </p>
+            <div className="flex items-center justify-center space-x-2 text-gray-300">
+              <svg className="w-5 h-5 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Redirecting to Journal in <span className="text-white font-bold">{redirectCountdown}</span> seconds...</span>
+            </div>
+            <button
+              onClick={() => navigate(userRole === 'mentor' ? '/mentor/journal' : '/student/journal', { state: { sessionId, fromSession: true } })}
+              className="mt-6 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Go to Journal Now
+            </button>
+          </div>
+        </div>
+      )}
+
       <style>{`
         * {
           box-shadow: none !important;

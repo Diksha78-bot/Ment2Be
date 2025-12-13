@@ -30,9 +30,9 @@ const UserProfileSidebar = ({ userName = 'User' }) => {
   }, [isOpen]);
 
   const menuItems = [
-    { label: 'Profile', icon: User, action: () => { setIsOpen(false); navigate(`/student/profile`); } },
-    { label: 'Settings', icon: Settings, action: () => { setIsOpen(false); } },
-    { label: 'Help', icon: HelpCircle, action: () => { setIsOpen(false); } },
+    { label: 'Profile', icon: User, action: () => { setIsOpen(false); navigate(`/student/profile`); }, color: 'text-indigo-400' },
+    { label: 'Settings', icon: Settings, action: () => { setIsOpen(false); }, color: 'text-blue-400' },
+    { label: 'Help', icon: HelpCircle, action: () => { setIsOpen(false); }, color: 'text-green-400' },
   ];
 
   return (
@@ -43,7 +43,7 @@ const UserProfileSidebar = ({ userName = 'User' }) => {
         className="p-1.5 rounded-lg hover:bg-gray-700/50 transition-colors flex items-center gap-1"
         title="Profile Menu"
       >
-        <User size={18} className="text-gray-300 hover:text-white" />
+        <User size={18} className="text-indigo-400 hover:text-indigo-300" />
         <ChevronDown size={16} className="text-gray-400" />
       </button>
 
@@ -93,7 +93,7 @@ const UserProfileSidebar = ({ userName = 'User' }) => {
                 onClick={item.action}
                 className="w-full text-left px-6 py-3 flex items-center gap-3 text-sm text-gray-300 hover:bg-gray-700/50 transition-colors"
               >
-                <Icon size={18} className="text-gray-400" />
+                <Icon size={18} className={item.color} />
                 {item.label}
               </button>
             );

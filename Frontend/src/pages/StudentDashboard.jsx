@@ -4,6 +4,9 @@ import { FiCalendar, FiClock, FiUser, FiBookOpen, FiTrendingUp, FiUserPlus, FiLo
 import Navbar from '../components/StudentDashboard/Navbar';
 import SessionTimer from '../components/SessionTimer';
 import KarmaPointsCard from '../components/KarmaPointsCard/KarmaPointsCard';
+import RateModal from '../components/StudentDashboard/RateModal';
+import ReviewModal from '../components/StudentDashboard/ReviewModal';
+import VideoUploadModal from '../components/StudentDashboard/VideoUploadModal';
 import { formatDistanceToNow } from 'date-fns';
 import { fetchStudentTasks } from '../services/studentTasksApi';
 
@@ -49,19 +52,23 @@ const MentorCard = ({ mentor, onNavigate }) => {
   };
 
   return (
-    <div className="flex flex-col space-y-2 p-3 bg-[#202327] rounded-lg hover:bg-[#2a2d32] transition-colors cursor-pointer" onClick={() => onNavigate(`/mentor/${mentor._id}`)}>
+    <div className="flex flex-col space-y-2 p-3 bg-[#202327] rounded-lg hover:bg-[#2a2d32] transition-colors cursor-pointer" onClick={() => onNavigate(`/mentor-detail?mentorId=${mentor._id}&mentor=${encodeURIComponent(mentor.name)}`)}>
       <div className="flex items-center space-x-3">
         <div className="relative">
           {mentor.hasConfirmedSession && (<div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#121212] z-10"></div>)}
-          <div className="h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-sm">
-            {mentor.profilePicture ? (<img src={mentor.profilePicture} alt={mentor.name} className="h-full w-full rounded-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.textContent = getInitials(mentor.name); }} />) : (<span>{getInitials(mentor.name)}</span>)}
+          <div className="h-10 w-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+            {(mentor.profilePicture && mentor.profilePicture.trim()) || mentor.mentorProfile?.profilePicture ? (
+              <img src={mentor.profilePicture && mentor.profilePicture.trim() ? mentor.profilePicture : mentor.mentorProfile?.profilePicture} alt={mentor.name} className="h-full w-full object-cover" />
+            ) : (
+              <span>{getInitials(mentor.name)}</span>
+            )}
           </div>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-white font-medium text-sm truncate">{mentor.name}</p>
           <p className="text-gray-400 text-xs">{mentor.title || 'Mentor'}</p>
         </div>
-        <span className="text-xs bg-gray-600 text-white px-2 py-0.5 rounded-full whitespace-nowrap">{formatLastInteraction(mentor.lastInteraction)}</span>
+        <span className="text-xs bg-gray-600 text-white px-2 py-0.5 rounded-full whitespace-nowrap">{formatLastInteraction(mentor.lastInteraction || mentor.createdAt || mentor.updatedAt)}</span>
       </div>
       {!loadingAvail && availability && (
         <div className="flex items-center space-x-2 text-xs">
@@ -83,10 +90,21 @@ const UserDashboard = () => {
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [mentors, setMentors] = useState([]);
   const [mentorsLoading, setMentorsLoading] = useState(true);
+  const [topExperts, setTopExperts] = useState([]);
+  const [topExpertsLoading, setTopExpertsLoading] = useState(true);
   const [recentMessages, setRecentMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [recentTasks, setRecentTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(true);
+  const [submittedReviews, setSubmittedReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+
+  // Modal states
+  const [rateModalOpen, setRateModalOpen] = useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [rateTab, setRateTab] = useState('rate'); // 'rate' or 'submissions'
 
   // Profile completion form state
   const showProfileForm = searchParams.get('complete-profile') === 'true';
@@ -95,6 +113,7 @@ const UserDashboard = () => {
     skills: '',
     interests: '',
     goals: '',
+    phoneNumber: '',
     linkedIn: '',
     github: '',
     portfolio: '',
@@ -102,6 +121,8 @@ const UserDashboard = () => {
   });
   const [formLoading, setFormLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [phoneSaving, setPhoneSaving] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -129,6 +150,8 @@ const UserDashboard = () => {
         }
 
         setProfile(data.user);
+        console.log('User data fetched:', data.user);
+        console.log('Phone number from API:', data.user.phoneNumber);
         // Pre-fill form with existing data
         if (data.user) {
           setFormData({
@@ -136,6 +159,7 @@ const UserDashboard = () => {
             skills: Array.isArray(data.user.skills) ? data.user.skills.join(', ') : '',
             interests: Array.isArray(data.user.interests) ? data.user.interests.join(', ') : (data.user.interests || ''),
             goals: data.user.goals || '',
+            phoneNumber: data.user.phoneNumber || '',
             linkedIn: data.user.socialLinks?.linkedIn || '',
             github: data.user.socialLinks?.github || '',
             portfolio: data.user.socialLinks?.portfolio || '',
@@ -157,9 +181,11 @@ const UserDashboard = () => {
 
     fetchProfile();
     fetchRecentMentors();
+    fetchTopExperts();
     fetchUpcomingSessions();
     fetchRecentMessages();
     fetchRecentTasks();
+    fetchSubmittedReviews();
   }, [navigate]);
 
   const fetchRecentMentors = async () => {
@@ -168,7 +194,8 @@ const UserDashboard = () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch('http://localhost:4000/api/mentors', {
+      // Fetch mentors from confirmed bookings only
+      const response = await fetch('http://localhost:4000/api/bookings', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -176,24 +203,86 @@ const UserDashboard = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch mentor data');
+        throw new Error('Failed to fetch bookings data');
       }
 
       const data = await response.json();
-      const allMentors = Array.isArray(data.mentors) ? data.mentors : [];
-
-      const uniqueMentors = Array.from(new Map(
-        allMentors.map(mentor => [mentor._id, mentor])
-      ).values()).sort((a, b) =>
-        new Date(b.lastInteraction || 0) - new Date(a.lastInteraction || 0)
+      const bookings = Array.isArray(data.bookings) ? data.bookings : [];
+      
+      // Filter only confirmed sessions and extract unique mentors
+      const confirmedBookings = bookings.filter(booking => 
+        booking.status === 'confirmed' || booking.status === 'completed'
       );
+      
+      // Create a map of unique mentors from confirmed bookings
+      const mentorMap = new Map();
+      confirmedBookings.forEach(booking => {
+        if (booking.mentor && booking.mentor._id) {
+          const mentorId = booking.mentor._id;
+          if (!mentorMap.has(mentorId)) {
+            mentorMap.set(mentorId, {
+              _id: mentorId,
+              name: booking.mentor.name,
+              profilePicture: booking.mentor.profilePicture || booking.mentor.mentorProfile?.profilePicture,
+              title: booking.mentor.mentorProfile?.headline || 'Mentor',
+              lastInteraction: booking.sessionDate || booking.createdAt,
+              hasConfirmedSession: true
+            });
+          } else {
+            // Update lastInteraction if this booking is more recent
+            const existing = mentorMap.get(mentorId);
+            const bookingDate = new Date(booking.sessionDate || booking.createdAt);
+            const existingDate = new Date(existing.lastInteraction);
+            if (bookingDate > existingDate) {
+              existing.lastInteraction = booking.sessionDate || booking.createdAt;
+            }
+          }
+        }
+      });
 
+      const uniqueMentors = Array.from(mentorMap.values()).sort((a, b) => {
+        const dateA = new Date(b.lastInteraction || 0);
+        const dateB = new Date(a.lastInteraction || 0);
+        return dateA - dateB;
+      });
+
+      console.log('Mentors with confirmed sessions:', uniqueMentors);
       setMentors(uniqueMentors);
     } catch (error) {
       console.error('Error fetching recent mentors:', error);
-      setError('Failed to load recent mentors');
+      setMentors([]);
     } finally {
       setMentorsLoading(false);
+    }
+  };
+
+  const fetchTopExperts = async () => {
+    try {
+      setTopExpertsLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch('http://localhost:4000/api/mentors/top-experts?limit=3', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch top experts');
+      }
+
+      const data = await response.json();
+      const experts = Array.isArray(data.mentors) ? data.mentors : [];
+      
+      console.log(' Top Experts:', experts);
+      setTopExperts(experts);
+    } catch (error) {
+      console.error('Error fetching top experts:', error);
+      setTopExperts([]);
+    } finally {
+      setTopExpertsLoading(false);
     }
   };
 
@@ -231,6 +320,7 @@ const UserDashboard = () => {
       });
 
       const data = await response.json();
+      console.log('Bookings API Response:', data);
 
       if (response.ok && data.success && data.bookings) {
         const upcoming = data.bookings.filter(booking => {
@@ -239,10 +329,28 @@ const UserDashboard = () => {
           return sessionDate >= now && ['pending', 'confirmed'].includes(booking.status);
         }).sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
 
-        setUpcomingSessions(upcoming.slice(0, 1));
+        console.log('Filtered upcoming bookings:', upcoming);
+
+        // Map booking to session format with mentor data
+        const sessionsWithMentor = upcoming.map(booking => ({
+          _id: booking._id, // Use booking ID as session ID for now
+          sessionId: booking._id,
+          mentorId: booking.mentor || booking.mentorId || {},
+          mentor: booking.mentor || booking.mentorId || {},
+          sessionDate: booking.sessionDate,
+          startTime: booking.sessionDate,
+          status: booking.status
+        }));
+
+        console.log('Sessions with mentor:', sessionsWithMentor);
+        setUpcomingSessions(sessionsWithMentor.slice(0, 2));
+      } else {
+        console.log('No bookings found or invalid response');
+        setUpcomingSessions([]);
       }
     } catch (err) {
       console.error('Error fetching sessions:', err);
+      setUpcomingSessions([]);
     } finally {
       setSessionsLoading(false);
     }
@@ -264,35 +372,43 @@ const UserDashboard = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Messages API Response:', data); // Debug log
+        console.log(' Raw Messages API Response:', data); // Debug log
         
-        const conversations = Array.isArray(data.data) ? data.data : (Array.isArray(data.conversations) ? data.conversations : []);
+        let conversations = [];
+        if (Array.isArray(data.data)) {
+          conversations = data.data;
+        } else if (Array.isArray(data.conversations)) {
+          conversations = data.conversations;
+        } else if (data.success && Array.isArray(data.data)) {
+          conversations = data.data;
+        }
         
-        // Get the latest message from each conversation and limit to 2
+        console.log(' Conversations found:', conversations.length); // Debug log
+        
         const messages = conversations
           .filter(conv => conv.lastMessage)
           .map(conv => {
-            // Handle different possible data structures
-            const lastMsg = conv.lastMessage;
             return {
-              _id: conv._id || Math.random(),
-              senderId: lastMsg.senderId || lastMsg.sender?._id,
-              senderName: conv.participantName || conv.participant?.name || lastMsg.sender?.name || 'Unknown',
-              content: lastMsg.content || lastMsg.message || '',
-              timestamp: lastMsg.timestamp || lastMsg.createdAt || new Date().toISOString(),
-              participantId: conv.participantId || conv.participant?._id
+              _id: conv.conversationId || Math.random(),
+              senderId: conv.lastSender,
+              senderName: conv.participantName || 'Unknown',
+              content: conv.lastMessage || 'No message',
+              timestamp: conv.lastMessageTime || new Date().toISOString(),
+              participantId: conv.participantId
             };
           })
           .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
           .slice(0, 2);
 
-        console.log('Processed messages:', messages); // Debug log
+        console.log(' Processed messages:', messages); // Debug log
         setRecentMessages(messages);
       } else {
-        console.error('API Error:', response.status);
+        console.error(' API Error:', response.status);
+        setRecentMessages([]);
       }
     } catch (err) {
-      console.error('Error fetching messages:', err);
+      console.error(' Error fetching messages:', err);
+      setRecentMessages([]);
     } finally {
       setMessagesLoading(false);
     }
@@ -323,6 +439,55 @@ const UserDashboard = () => {
       setRecentTasks([]);
     } finally {
       setTasksLoading(false);
+    }
+  };
+
+  const fetchSubmittedReviews = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setReviewsLoading(false);
+      return;
+    }
+
+    try {
+      setReviewsLoading(true);
+      console.log('Fetching submitted reviews for current user...');
+      
+      const response = await fetch('http://localhost:4000/api/reviews', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('Reviews API response status:', response.status);
+      const data = await response.json();
+      console.log('Reviews API response data:', data);
+      console.log('Reviews array:', data.reviews);
+      console.log('Reviews count:', data.reviews?.length);
+      
+      if (response.ok) {
+        const reviewsList = Array.isArray(data.reviews) ? data.reviews : [];
+        setSubmittedReviews(reviewsList);
+        console.log('Submitted reviews loaded successfully:', reviewsList.length, 'reviews');
+        reviewsList.forEach((review, idx) => {
+          console.log(`Review ${idx}:`, {
+            id: review._id,
+            rating: review.rating,
+            hasReview: !!review.review,
+            createdAt: review.createdAt
+          });
+        });
+      } else {
+        console.log('API error:', data.message);
+        setSubmittedReviews([]);
+      }
+    } catch (err) {
+      console.error('Error fetching submitted reviews:', err);
+      setSubmittedReviews([]);
+    } finally {
+      setReviewsLoading(false);
     }
   };
 
@@ -411,6 +576,7 @@ const UserDashboard = () => {
       submitData.append('skills', formData.skills);
       submitData.append('interests', formData.interests);
       submitData.append('goals', formData.goals);
+      submitData.append('phoneNumber', formData.phoneNumber);
       submitData.append('linkedIn', formData.linkedIn);
       submitData.append('github', formData.github);
       submitData.append('portfolio', formData.portfolio);
@@ -453,6 +619,34 @@ const UserDashboard = () => {
   const joinedLabel = profile?.createdAt
     ? new Date(profile.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
     : '';
+
+  // Calculate profile completion percentage
+  const calculateProfileCompletion = (profile) => {
+    if (!profile) return 0;
+    
+    const fields = [
+      profile.name,
+      profile.email,
+      profile.bio,
+      profile.skills && profile.skills.length > 0,
+      profile.interests,
+      profile.goals,
+      profile.phoneNumber,
+      profile.profilePicture,
+      profile.socialLinks?.linkedIn,
+      profile.socialLinks?.github
+    ];
+    
+    const completedFields = fields.filter(field => {
+      if (typeof field === 'string') return field.trim().length > 0;
+      if (Array.isArray(field)) return field.length > 0;
+      return Boolean(field);
+    }).length;
+    
+    return Math.round((completedFields / fields.length) * 100);
+  };
+
+  const profileCompletion = calculateProfileCompletion(profile);
 
   if (loading)
     return (
@@ -602,6 +796,79 @@ const UserDashboard = () => {
                       <textarea name="goals" value={formData.goals} onChange={handleFormChange} rows={3} placeholder="What do you want to achieve?" className="w-full px-4 py-3 bg-[#202327] border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
+                      <div className="flex gap-2">
+                        <select
+                          value={(() => {
+                            const phone = formData.phoneNumber || '';
+                            if (phone.startsWith('+971')) return '+971';
+                            if (phone.startsWith('+91')) return '+91';
+                            if (phone.startsWith('+86')) return '+86';
+                            if (phone.startsWith('+81')) return '+81';
+                            if (phone.startsWith('+65')) return '+65';
+                            if (phone.startsWith('+61')) return '+61';
+                            if (phone.startsWith('+49')) return '+49';
+                            if (phone.startsWith('+44')) return '+44';
+                            if (phone.startsWith('+33')) return '+33';
+                            if (phone.startsWith('+1')) return '+1';
+                            return '+1';
+                          })()}
+                          onChange={(e) => {
+                            const code = e.target.value;
+                            const number = formData.phoneNumber?.replace(/^\+\d+\s*/, '') || '';
+                            setFormData({ ...formData, phoneNumber: code + ' ' + number });
+                          }}
+                          className="w-28 px-2 py-3 bg-[#202327] border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="+1">🇺🇸 +1</option>
+                          <option value="+91">🇮🇳 +91</option>
+                          <option value="+44">🇬🇧 +44</option>
+                          <option value="+61">🇦🇺 +61</option>
+                          <option value="+86">🇨🇳 +86</option>
+                          <option value="+81">🇯🇵 +81</option>
+                          <option value="+49">🇩🇪 +49</option>
+                          <option value="+33">🇫🇷 +33</option>
+                          <option value="+971">🇦🇪 +971</option>
+                          <option value="+65">🇸🇬 +65</option>
+                        </select>
+                        <input
+                          type="tel"
+                          value={(() => {
+                            const phone = formData.phoneNumber || '';
+                            if (phone.startsWith('+971')) return phone.slice(4).replace(/^\s*/, '');
+                            if (phone.startsWith('+91')) return phone.slice(3).replace(/^\s*/, '');
+                            if (phone.startsWith('+86')) return phone.slice(3).replace(/^\s*/, '');
+                            if (phone.startsWith('+81')) return phone.slice(3).replace(/^\s*/, '');
+                            if (phone.startsWith('+65')) return phone.slice(3).replace(/^\s*/, '');
+                            if (phone.startsWith('+61')) return phone.slice(3).replace(/^\s*/, '');
+                            if (phone.startsWith('+49')) return phone.slice(3).replace(/^\s*/, '');
+                            if (phone.startsWith('+44')) return phone.slice(3).replace(/^\s*/, '');
+                            if (phone.startsWith('+33')) return phone.slice(3).replace(/^\s*/, '');
+                            if (phone.startsWith('+1')) return phone.slice(2).replace(/^\s*/, '');
+                            return phone;
+                          })()}
+                          onChange={(e) => {
+                            const phone = formData.phoneNumber || '';
+                            let code = '+1';
+                            if (phone.startsWith('+971')) code = '+971';
+                            else if (phone.startsWith('+91')) code = '+91';
+                            else if (phone.startsWith('+86')) code = '+86';
+                            else if (phone.startsWith('+81')) code = '+81';
+                            else if (phone.startsWith('+65')) code = '+65';
+                            else if (phone.startsWith('+61')) code = '+61';
+                            else if (phone.startsWith('+49')) code = '+49';
+                            else if (phone.startsWith('+44')) code = '+44';
+                            else if (phone.startsWith('+33')) code = '+33';
+                            else if (phone.startsWith('+1')) code = '+1';
+                            setFormData({ ...formData, phoneNumber: code + ' ' + e.target.value });
+                          }}
+                          className="flex-1 px-4 py-3 bg-[#202327] border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="(555) 123-4567"
+                        />
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">LinkedIn Profile</label>
@@ -680,14 +947,19 @@ const UserDashboard = () => {
 
                         return (
                           <div key={task._id} className="flex items-start space-x-3 p-3 bg-[#202327] rounded-lg hover:bg-[#2a2d32] transition-colors cursor-pointer" onClick={() => navigate('/student/tasks')}>
-                            <input type="checkbox" className="mt-1 w-4 h-4 rounded border-gray-600 bg-[#121212] cursor-pointer" checked={task.status === 'completed'} disabled />
                             <div className="flex-1 min-w-0">
                               <p className={`text-white font-medium text-sm ${task.status === 'completed' ? 'line-through' : ''}`}>{task.title}</p>
                               <p className="text-gray-400 text-xs mt-0.5">{task.description || 'No description'}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${getStatusColor(task.status)}`}>
+                                  {task.status ? task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ') : 'Not Started'}
+                                </span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${getPriorityColor(task.priority)}`}>
+                                  {task.priority ? task.priority.charAt(0).toUpperCase() + task.priority.slice(1) : 'Medium'}
+                                </span>
+                                <span className="text-[10px] text-gray-400 ml-auto">{formatLastInteraction(task.createdAt)}</span>
+                              </div>
                             </div>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${getPriorityColor(task.priority)}`}>
-                              {task.priority ? task.priority.charAt(0).toUpperCase() + task.priority.slice(1) : 'Medium'}
-                            </span>
                           </div>
                         );
                       })}
@@ -715,19 +987,19 @@ const UserDashboard = () => {
                     <div className="text-center py-4">
                       <p className="text-gray-400 text-xs">Loading messages...</p>
                     </div>
-                  ) : recentMessages.length > 0 ? (
+                  ) : recentMessages && recentMessages.length > 0 ? (
                     <div className="space-y-3">
                       {recentMessages.map((msg) => (
-                        <div key={msg._id} className="flex items-start space-x-3 p-3 bg-[#202327] rounded-lg hover:bg-[#2a2d32] transition-colors cursor-pointer" onClick={() => navigate('/student/chat')}>
+                        <div key={msg._id || msg.participantId} className="flex items-start space-x-3 p-3 bg-[#202327] rounded-lg hover:bg-[#2a2d32] transition-colors cursor-pointer" onClick={() => navigate('/student/chat')}>
                           <div className="h-9 w-9 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                            {getInitials(msg.senderName)}
+                            {getInitials(msg.senderName || 'Unknown')}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <p className="text-white font-medium text-sm truncate">{msg.senderName}</p>
-                              <span className="text-gray-400 text-xs">{formatLastInteraction(msg.timestamp)}</span>
+                              <p className="text-white font-medium text-sm truncate">{msg.senderName || 'Unknown Mentor'}</p>
+                              <span className="text-gray-400 text-xs">{msg.timestamp ? formatLastInteraction(msg.timestamp) : 'Just now'}</span>
                             </div>
-                            <p className="text-gray-300 text-xs mt-1 line-clamp-2">{msg.content}</p>
+                            <p className="text-gray-300 text-xs mt-1 line-clamp-2">{msg.content || 'No message content'}</p>
                           </div>
                         </div>
                       ))}
@@ -737,6 +1009,140 @@ const UserDashboard = () => {
                       <p className="text-gray-400 text-sm">No messages yet</p>
                       <button onClick={() => navigate('/student/chat')} className="mt-2 text-blue-400 hover:text-blue-300 text-xs font-medium">Start a conversation</button>
                     </div>
+                  )}
+                </div>
+
+                <div className="bg-[#121212] rounded-lg shadow p-4 border border-gray-700">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-white flex items-center">
+                      <svg className="w-4 h-4 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      Rate Your Mentor
+                    </h2>
+                    <button onClick={() => navigate('/student/explore')} className="text-[#535353] hover:text-white text-xs font-medium">View All</button>
+                  </div>
+
+                  {/* Tab Buttons */}
+                  <div className="flex mb-3 bg-[#202327] rounded-lg p-1">
+                    <button
+                      onClick={() => setRateTab('rate')}
+                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${rateTab === 'rate' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                    >
+                      Rate Mentor
+                    </button>
+                    <button
+                      onClick={() => setRateTab('submissions')}
+                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${rateTab === 'submissions' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                    >
+                      Submissions
+                    </button>
+                  </div>
+
+                  {rateTab === 'rate' ? (
+                    /* Rate Mentor Tab */
+                    upcomingSessions.length > 0 ? (
+                      <div className="space-y-3">
+                        {upcomingSessions.slice(0, 2).map((session) => (
+                          <div key={session._id} className="p-3 bg-[#202327] rounded-lg hover:bg-[#2a2d32] transition-colors">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <div className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 overflow-hidden">
+                                {session.mentorId?.profilePicture ? (
+                                  <img src={session.mentorId.profilePicture} alt={session.mentorId?.name} className="h-full w-full object-cover" />
+                                ) : (
+                                  <span>{session.mentorId?.name?.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}</span>
+                                )}
+                              </div>
+                              <p className="text-white font-medium text-xs truncate">{session.mentorId?.name}</p>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <button 
+                                onClick={() => {
+                                  setSelectedSession(session);
+                                  setRateModalOpen(true);
+                                }}
+                                className="px-2 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs font-medium transition-colors flex items-center justify-center"
+                              >
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                Rate
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  setSelectedSession(session);
+                                  setVideoModalOpen(true);
+                                }}
+                                className="px-2 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs font-medium transition-colors flex items-center justify-center"
+                              >
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Video
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  setSelectedSession(session);
+                                  setReviewModalOpen(true);
+                                }}
+                                className="px-2 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs font-medium transition-colors flex items-center justify-center"
+                              >
+                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                </svg>
+                                Review
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-gray-400 text-sm">No sessions to rate</p>
+                        <p className="text-[11px] text-gray-500 mt-1">Book a session first</p>
+                      </div>
+                    )
+                  ) : (
+                    /* Submissions Tab */
+                    reviewsLoading ? (
+                      <div className="text-center py-4">
+                        <p className="text-gray-400 text-xs">Loading submissions...</p>
+                      </div>
+                    ) : submittedReviews.length > 0 ? (
+                      <div className="space-y-3">
+                        {submittedReviews.slice(0, 3).map((review) => (
+                          <div key={review._id} className="p-3 bg-[#202327] rounded-lg border border-gray-600">
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <p className="text-white font-medium text-xs">Submitted {formatLastInteraction(review.createdAt)}</p>
+                              </div>
+                              <div className="flex gap-0.5">
+                                {review.rating && [...Array(5)].map((_, i) => (
+                                  <svg key={i} className={`w-3 h-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                  </svg>
+                                ))}
+                              </div>
+                            </div>
+                            {review.review && (
+                              <div className="mb-2">
+                                {review.review.startsWith('http') ? (
+                                  <div className="text-xs text-blue-400">📹 Video uploaded</div>
+                                ) : (
+                                  <p className="text-gray-300 text-xs line-clamp-2">{review.review}</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-gray-400 text-sm">No submissions yet</p>
+                        <p className="text-[11px] text-gray-500 mt-1">Rate or review your mentors</p>
+                      </div>
+                    )
                   )}
                 </div>
 
@@ -804,12 +1210,12 @@ const UserDashboard = () => {
                 <div className="pt-2 border-t border-gray-700">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-700 text-gray-300 capitalize">{profile.role}</span>
-                    <span className="text-xs text-gray-400">{Math.min(profile.karmaPoints || 0, 100)}/100</span>
+                    <span className="text-xs text-gray-400">{profileCompletion}/100</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-1.5 mb-3">
                     <div 
                       className="h-1.5 rounded-full transition-all duration-300" 
-                      style={{ width: `${Math.min(profile.karmaPoints || 0, 100)}%`, backgroundColor: '#da8c18' }}
+                      style={{ width: `${profileCompletion}%`, backgroundColor: '#da8c18' }}
                     ></div>
                   </div>
                   <button onClick={handleCompleteProfile} className="mt-3 w-full flex items-center justify-center px-3 py-2 border border-gray-600 rounded-lg text-xs font-semibold text-gray-300 bg-[#202327] hover:bg-[#2a2d32] transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500">
@@ -857,6 +1263,33 @@ const UserDashboard = () => {
           </aside>
         </div>
       </div>
+
+      {/* Review Modals */}
+      {selectedSession && (
+        <>
+          <RateModal
+            isOpen={rateModalOpen}
+            onClose={() => setRateModalOpen(false)}
+            sessionId={selectedSession.sessionId || selectedSession._id}
+            bookingId={selectedSession._id}
+            mentorName={selectedSession.mentorId?.name || selectedSession.mentor?.name || 'Mentor'}
+          />
+          <ReviewModal
+            isOpen={reviewModalOpen}
+            onClose={() => setReviewModalOpen(false)}
+            sessionId={selectedSession.sessionId || selectedSession._id}
+            bookingId={selectedSession._id}
+            mentorName={selectedSession.mentorId?.name || selectedSession.mentor?.name || 'Mentor'}
+          />
+          <VideoUploadModal
+            isOpen={videoModalOpen}
+            onClose={() => setVideoModalOpen(false)}
+            sessionId={selectedSession.sessionId || selectedSession._id}
+            bookingId={selectedSession._id}
+            mentorName={selectedSession.mentorId?.name || selectedSession.mentor?.name || 'Mentor'}
+          />
+        </>
+      )}
     </div>
   );
 };

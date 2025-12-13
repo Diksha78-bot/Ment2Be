@@ -5,6 +5,7 @@ import {
   GetMentorById, 
   GetMentorsBySkill,
   GetCarouselMentors,
+  GetTopExperts,
   CreateOrUpdateMentorProfile,
   UploadMentorPhoto,
   RemoveMentorPhoto
@@ -28,6 +29,7 @@ const validateMongoId = (req, res, next) => {
 
 mentorRouter.get('/', GetAllMentors);
 mentorRouter.get('/carousel', GetCarouselMentors);
+mentorRouter.get('/top-experts', GetTopExperts);
 mentorRouter.get('/:id', validateMongoId, GetMentorById);
 mentorRouter.get('/skill/:skillId', GetMentorsBySkill);
 

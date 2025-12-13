@@ -70,6 +70,19 @@ export function StudentForum() {
     return date.toLocaleDateString();
   };
 
+  // Calculate user-specific statistics
+  const userStats = {
+    myQuestions: questions.filter(q => q.author?._id === user?._id || q.author?.name === user?.name).length,
+    answeredQuestions: questions.filter(q => 
+      (q.author?._id === user?._id || q.author?.name === user?.name) && 
+      q.answers && q.answers.length > 0
+    ).length,
+    pendingQuestions: questions.filter(q => 
+      (q.author?._id === user?._id || q.author?.name === user?.name) && 
+      (!q.answers || q.answers.length === 0)
+    ).length
+  };
+
   // Filter and sort questions
   const filteredQuestions = questions.filter((q) => {
     if (selectedDomain !== "for-you" && q.category !== selectedDomain) return false;
@@ -225,7 +238,7 @@ export function StudentForum() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium text-sm mb-1">My Questions</p>
-                  <p className="text-3xl font-bold">2</p>
+                  <p className="text-3xl font-bold">{userStats.myQuestions}</p>
                   <button className="text-blue-500 text-sm flex items-center gap-1 mt-2 hover:underline">
                     View My Questions <ArrowRight className="h-3 w-3" />
                   </button>
@@ -243,7 +256,7 @@ export function StudentForum() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium text-sm mb-1">Answered Questions</p>
-                  <p className="text-3xl font-bold">1</p>
+                  <p className="text-3xl font-bold">{userStats.answeredQuestions}</p>
                   <button className="text-blue-500 text-sm flex items-center gap-1 mt-2 hover:underline">
                     View Answered <ArrowRight className="h-3 w-3" />
                   </button>
@@ -261,7 +274,7 @@ export function StudentForum() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium text-sm mb-1">Pending Answers</p>
-                  <p className="text-3xl font-bold">1</p>
+                  <p className="text-3xl font-bold">{userStats.pendingQuestions}</p>
                   <button className="text-blue-500 text-sm flex items-center gap-1 mt-2 hover:underline">
                     View Pending <ArrowRight className="h-3 w-3" />
                   </button>

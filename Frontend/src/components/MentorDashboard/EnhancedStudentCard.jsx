@@ -27,6 +27,9 @@ export const EnhancedStudentCard = ({
   const [showAllSessions, setShowAllSessions] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showKarmaAnimation, setShowKarmaAnimation] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastProgress, setToastProgress] = useState(100);
 
   // Update current time every second for countdown
   useEffect(() => {
@@ -44,6 +47,34 @@ export const EnhancedStudentCard = ({
     setTimeout(() => {
       setShowKarmaAnimation(false);
     }, 2000);
+  };
+
+  // Handle join session with toast notification
+  const handleJoinClick = (session) => {
+    const timing = getSessionTiming(session);
+    if (!timing.canJoin) {
+      setToastMessage(`Session is not available yet. You can join on ${formatDate(session.sessionDate)} at ${session.sessionTime}`);
+      setShowToast(true);
+      setToastProgress(100);
+      
+      // Animate progress bar over 4 seconds
+      const interval = setInterval(() => {
+        setToastProgress(prev => {
+          if (prev <= 0) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 0.5; // 100 / 200 = 0.5 per 20ms for smooth animation
+        });
+      }, 20);
+      
+      setTimeout(() => {
+        setShowToast(false);
+        clearInterval(interval);
+      }, 4000);
+      return;
+    }
+    onJoinSession(session);
   };
 
   // Sort sessions: upcoming first, then by date
@@ -199,6 +230,22 @@ export const EnhancedStudentCard = ({
 
   return (
     <div className="bg-[#121212] border border-gray-700 rounded-xl overflow-visible shadow-lg relative">
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-[#1a1a1a] text-gray-300 border border-gray-700 rounded-lg shadow-lg z-50 max-w-sm overflow-hidden">
+          <div className="px-4 py-3 flex items-center gap-2">
+            <FiAlertCircle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+            <span className="text-sm">{toastMessage}</span>
+          </div>
+          <div className="h-1 bg-gray-700">
+            <div 
+              className="h-full bg-gray-500 transition-all duration-100"
+              style={{ width: `${toastProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Karma Animation */}
       {showKarmaAnimation && (
         <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 z-50">
@@ -259,6 +306,16 @@ export const EnhancedStudentCard = ({
                 <span className="text-white font-semibold">{totalHours}h</span>
                 <span className="text-gray-400">Total</span>
               </div>
+            </div>
+
+            {/* Availability Status */}
+            <div className="flex items-center gap-2 mt-3">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: '#da8c18' }}>
+                1 available
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: '#da8c18' }}>
+                1 unavailable
+              </span>
             </div>
           </div>
         </div>
@@ -342,11 +399,13 @@ export const EnhancedStudentCard = ({
             <span className="text-white font-medium">{selectedSession.location || 'Online'}</span>
           </div>
 
-          {/* Countdown/Status */}
-          <div className="flex items-center gap-3 text-sm p-3 rounded-lg bg-[#1a1a1a]">
-            <FiClock className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-400">Status:</span>
-            <span className="font-semibold text-white">{timing.message}</span>
+          {/* Status and Countdown */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-[#1a1a1a]">
+            <div className="flex items-center gap-3">
+              <FiClock className="w-4 h-4 text-gray-400" />
+              <span className="text-gray-400">Status:</span>
+              {getStatusBadge(selectedSession.status, selectedSession.sessionDate)}
+            </div>
           </div>
         </div>
 
@@ -385,23 +444,13 @@ export const EnhancedStudentCard = ({
 
           {selectedSession.status === 'confirmed' && (
             <>
-              {timing.canJoin ? (
-                <button
-                  onClick={() => onJoinSession(selectedSession)}
-                  className="flex-1 bg-[#2a2d32] hover:bg-[#3a3d42] text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                >
-                  <FiVideo className="w-4 h-4" />
-                  Join Session
-                </button>
-              ) : (
-                <button
-                  disabled
-                  className="flex-1 bg-[#1a1a1a] text-gray-500 px-4 py-2 rounded-lg font-medium cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  <FiCheckCircle className="w-4 h-4" />
-                  Confirmed
-                </button>
-              )}
+              <button
+                onClick={() => handleJoinClick(selectedSession)}
+                className="flex-1 bg-[#2a2d32] hover:bg-[#3a3d42] text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <FiVideo className="w-4 h-4" />
+                Join the Session on {formatDate(selectedSession.sessionDate)} at {selectedSession.sessionTime}
+              </button>
               <button
                 onClick={() => onCancelSession(selectedSession)}
                 className="px-4 py-2 bg-[#2a2d32] hover:bg-[#3a3d42] text-white rounded-lg font-medium transition-colors"

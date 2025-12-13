@@ -32,6 +32,23 @@ public class KarmaController {
         }
     }
 
+    @PostMapping("/profile-progress")
+    public KarmaResponse profileProgress(@RequestBody ProfileProgressRequest request) {
+        logger.info("🔔 Profile progress karma requested - Completion: {}%", request.getCompletionPercentage());
+        try {
+            int points = karmaService.calculateProfileProgressKarma(
+                request.getCompletionPercentage(),
+                request.getCompletedFields(),
+                request.getTotalFields()
+            );
+            logger.info("✅ Profile progress karma calculated: {} points for {}% completion", points, request.getCompletionPercentage());
+            return new KarmaResponse("user", points, "Profile progress karma awarded for " + request.getCompletionPercentage() + "% completion");
+        } catch (Exception e) {
+            logger.error("❌ Error calculating profile progress karma", e);
+            throw e;
+        }
+    }
+
     @GetMapping("/session-completed")
     public KarmaResponse sessionCompleted() {
         int points = karmaService.calculateSessionCompletedKarma();
@@ -120,6 +137,38 @@ public class KarmaController {
 
         public void setMessage(String message) {
             this.message = message;
+        }
+    }
+
+    public static class ProfileProgressRequest {
+        private int completionPercentage;
+        private int completedFields;
+        private int totalFields;
+
+        public ProfileProgressRequest() {}
+
+        public int getCompletionPercentage() {
+            return completionPercentage;
+        }
+
+        public void setCompletionPercentage(int completionPercentage) {
+            this.completionPercentage = completionPercentage;
+        }
+
+        public int getCompletedFields() {
+            return completedFields;
+        }
+
+        public void setCompletedFields(int completedFields) {
+            this.completedFields = completedFields;
+        }
+
+        public int getTotalFields() {
+            return totalFields;
+        }
+
+        public void setTotalFields(int totalFields) {
+            this.totalFields = totalFields;
         }
     }
 }

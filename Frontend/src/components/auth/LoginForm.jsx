@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ProfileCarousel from "./ProfileCarousel"
 import { useGoogleLogin } from '@react-oauth/google';
+import PhoneLoginForm from './PhoneLoginForm';
 
 const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) => {
   const [role, setRole] = useState("student");
@@ -10,6 +11,7 @@ const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) 
   });
   const [captchaValue, setCaptchaValue] = useState(null);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [showPhoneForm, setShowPhoneForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
@@ -48,7 +50,7 @@ const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) 
 
   return (
     <div className="w-full max-w-md mx-auto text-center max-h-screen overflow-y-auto">
-      {!showEmailForm ? (
+      {!showEmailForm && !showPhoneForm ? (
         <>
           {/* Main Heading */}
           <h1 className="text-3xl font-bold text-white mb-2">Log into Uploom</h1>
@@ -131,6 +133,7 @@ const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) 
               
               <button
                 type="button"
+                onClick={() => setShowPhoneForm(true)}
                 className="flex-1 flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white py-3 px-4 rounded border border-gray-700 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,7 +144,7 @@ const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) 
             </div>
           </div>
         </>
-      ) : (
+      ) : showEmailForm ? (
         <>
           {/* Email Login Form */}
           <div className="text-left">
@@ -277,6 +280,14 @@ const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) 
             </form>
           </div>
         </>
+      ) : (
+        <PhoneLoginForm
+          onBack={() => setShowPhoneForm(false)}
+          onNavigateToRegister={onNavigateToRegister}
+          role={role}
+          setRole={setRole}
+          isLoading={isLoading}
+        />
       )}
     </div>
   );

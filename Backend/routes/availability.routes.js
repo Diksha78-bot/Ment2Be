@@ -11,25 +11,24 @@ import {
 
 const router = express.Router();
 
-// All availability routes require authentication
-router.use(authenticateToken);
+// PUBLIC ROUTES - No authentication required (for students browsing mentors)
+// Get mentor availability for a specific date (students booking sessions)
+router.get('/mentor/:mentorId', getAvailableSlots);
 
-// Save mentor availability
-router.post('/', saveAvailability);
-
-// Quick setup - Set availability for multiple dates
-router.post('/quick-setup', quickSetupAvailability);
-
-// Get mentor availability for a specific date
-router.get('/:mentorId', getAvailableSlots);
-
-// Get latest availability for a mentor (for dashboard)
+// Get latest availability for a mentor (public display)
 router.get('/latest/:mentorId', getLatestAvailability);
 
-// Get all availability for authenticated mentor
-router.get('/mentor/all', getAvailability);
+// PROTECTED ROUTES - Authentication required (for mentors managing their own availability)
+// Save mentor availability
+router.post('/', authenticateToken, saveAvailability);
+
+// Quick setup - Set availability for multiple dates
+router.post('/quick-setup', authenticateToken, quickSetupAvailability);
+
+// Get all availability for authenticated mentor (their own dashboard)
+router.get('/my-availability', authenticateToken, getAvailability);
 
 // Delete availability
-router.delete('/:availabilityId', deleteAvailability);
+router.delete('/:availabilityId', authenticateToken, deleteAvailability);
 
 export default router;

@@ -28,6 +28,7 @@ const BookSession = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
+  const [bookedTimeSlots, setBookedTimeSlots] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");

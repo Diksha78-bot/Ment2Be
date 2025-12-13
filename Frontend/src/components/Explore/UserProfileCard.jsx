@@ -8,7 +8,7 @@ const UserProfileCard = ({ user }) => {
       <div className="p-3 flex-1 flex flex-col">
         <div className="flex items-center">
           <div className="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-            <FiUser className="h-5 w-5 text-gray-300" />
+            <FiUser className="h-5 w-5" style={{ color: '#73501c' }} />
           </div>
           <div className="ml-3 min-w-0">
             <p className="text-sm font-medium text-white truncate">

@@ -49,26 +49,31 @@ const ExplorePage = () => {
         
         if (data.success) {
           // Transform data to match your component's expected format
-          const transformedMentors = data.mentors.map(mentor => ({
-            id: mentor._id,
-            name: mentor.name,
-            title: mentor.headline || 'Mentor',
-            companies: mentor.company || 'N/A',
-            experience: mentor.experience || 'N/A',
-            bio: mentor.bio || '',
-            tags: Array.isArray(mentor.skills)
-              ? mentor.skills
-                  .map((skill) => (typeof skill === 'string' ? skill : skill?.name))
-                  .filter(Boolean)
-              : [],
-            rating: mentor.averageRating || 0,
-            ratedCount: mentor.totalReviews || 0,
-            price: mentor.hourlyRate || 0,
-            priceUnit: 'Per Min',
-            image: mentor.profilePicture || mentor.mentorProfile?.profilePicture || '',
-            isOnline: mentor.isOnline || false
-          }));
+          const transformedMentors = data.mentors.map(mentor => {
+            const profilePic = mentor.profilePicture || mentor.mentorProfile?.profilePicture || '';
+            console.log(`📸 Mentor: ${mentor.name}, ProfilePicture: ${profilePic ? 'YES' : 'NO'}`);
+            return {
+              id: mentor._id,
+              name: mentor.name,
+              title: mentor.headline || 'Mentor',
+              companies: mentor.company || 'N/A',
+              experience: mentor.experience || 'N/A',
+              bio: mentor.bio || '',
+              tags: Array.isArray(mentor.skills)
+                ? mentor.skills
+                    .map((skill) => (typeof skill === 'string' ? skill : skill?.name))
+                    .filter(Boolean)
+                : [],
+              rating: mentor.averageRating || 0,
+              ratedCount: mentor.totalReviews || 0,
+              price: mentor.hourlyRate || 0,
+              priceUnit: 'Per Min',
+              image: profilePic,
+              isOnline: mentor.isOnline || false
+            };
+          });
           
+          console.log('✅ Transformed mentors:', transformedMentors);
           setMentors(transformedMentors);
         } else {
           setError('Failed to load mentors');

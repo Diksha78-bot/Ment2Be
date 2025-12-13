@@ -185,6 +185,26 @@ const handleSocketConnection = (io) => {
         }
       }
     });
+
+    // Handle session end - notify all participants in the room
+    socket.on('end-session', ({ roomId, sessionId, endedBy, endedByName, endedByRole }) => {
+      console.log(`Session ${sessionId} ended by ${endedByName} (${endedByRole}) in room ${roomId}`);
+      
+      // Notify ALL users in the room (including the one who ended it for confirmation)
+      io.to(roomId).emit('session-ended', {
+        sessionId,
+        endedBy,
+        endedByName,
+        endedByRole,
+        timestamp: new Date().toISOString()
+      });
+
+      // Clean up the room
+      if (activeRooms.has(roomId)) {
+        activeRooms.delete(roomId);
+        console.log(`Room ${roomId} cleaned up after session end`);
+      }
+    });
   });
 };
 

@@ -11,6 +11,7 @@ const MentorDetailPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mentorName = searchParams.get('mentor');
+  const mentorId = searchParams.get('mentorId');
   const [loading, setLoading] = useState(true);
   const [mentorData, setMentorData] = useState(null);
   const [error, setError] = useState(null);
@@ -29,8 +30,8 @@ const MentorDetailPage = () => {
     }
 
     const fetchMentorData = async () => {
-      if (!mentorName) {
-        setError("No mentor name provided");
+      if (!mentorId) {
+        setError("No mentor ID provided");
         setLoading(false);
         return;
       }
@@ -39,8 +40,8 @@ const MentorDetailPage = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch all mentors and find the one with matching name
-        const response = await fetch('http://localhost:4000/api/mentors', {
+        // Fetch mentor by ID directly
+        const response = await fetch(`http://localhost:4000/api/mentors/${mentorId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -51,52 +52,44 @@ const MentorDetailPage = () => {
         const data = await response.json();
         
         if (!response.ok) {
-          throw new Error(data.message || 'Failed to fetch mentors');
+          throw new Error(data.message || 'Failed to fetch mentor');
         }
 
-        if (data.success && data.mentors) {
-          // Find mentor by name (case-insensitive)
-          const mentor = data.mentors.find(m => 
-            m.name.toLowerCase() === mentorName.toLowerCase()
-          );
-
-          if (mentor) {
-            // Transform mentor data to match component structure
-            const transformedMentor = {
-              id: mentor._id,
-              name: mentor.name,
-              title: mentor.headline || mentor.mentorProfile?.headline || 'Mentor',
-              company: mentor.company || mentor.mentorProfile?.company || 'N/A',
-              location: mentor.location || 'Location not specified',
-              rating: mentor.averageRating || 0,
-              reviews: mentor.totalReviews || 0,
-              profileImage: mentor.profilePicture || mentor.mentorProfile?.profilePicture || null,
-              bio: mentor.bio || mentor.mentorProfile?.bio || 'No bio available',
-              skills: Array.isArray(mentor.skills)
-                ? mentor.skills
-                    .map((skill) => (typeof skill === 'string' ? skill : skill?.name))
-                    .filter(Boolean)
-                : [],
-              experience: mentor.experience || mentor.mentorProfile?.experience || 'N/A',
-              hourlyRate: mentor.hourlyRate || mentor.mentorProfile?.hourlyRate || 0,
-              socialLinks: {
-                linkedin: mentor.mentorProfile?.socialLinks?.linkedin || '',
-                github: mentor.mentorProfile?.socialLinks?.github || ''
-              },
-              stats: {
-                totalMentoringTime: "0 mins",
-                sessionsCompleted: mentor.totalSessions || 0,
-                averageAttendance: "N/A",
-                karmaPoints: mentor.karmaPoints || 0
-              }
-            };
-            
-            setMentorData(transformedMentor);
-          } else {
-            setError(`Mentor "${mentorName}" not found`);
-          }
+        if (data.success && data.mentor) {
+          const mentor = data.mentor;
+          // Transform mentor data to match component structure
+          const transformedMentor = {
+            id: mentor._id,
+            name: mentor.name,
+            title: mentor.headline || mentor.mentorProfile?.headline || 'Mentor',
+            company: mentor.company || mentor.mentorProfile?.company || 'N/A',
+            location: mentor.location || 'Location not specified',
+            rating: mentor.averageRating || 0,
+            reviews: mentor.totalReviews || 0,
+            profileImage: mentor.profilePicture || mentor.mentorProfile?.profilePicture || null,
+            bio: mentor.bio || mentor.mentorProfile?.bio || 'No bio available',
+            skills: Array.isArray(mentor.skills)
+              ? mentor.skills
+                  .map((skill) => (typeof skill === 'string' ? skill : skill?.name))
+                  .filter(Boolean)
+              : [],
+            experience: mentor.experience || mentor.mentorProfile?.experience || 'N/A',
+            hourlyRate: mentor.hourlyRate || mentor.mentorProfile?.hourlyRate || 0,
+            socialLinks: {
+              linkedin: mentor.mentorProfile?.socialLinks?.linkedin || '',
+              github: mentor.mentorProfile?.socialLinks?.github || ''
+            },
+            stats: {
+              totalMentoringTime: "0 mins",
+              sessionsCompleted: mentor.totalSessions || 0,
+              averageAttendance: "N/A",
+              karmaPoints: mentor.karmaPoints || 0
+            }
+          };
+          
+          setMentorData(transformedMentor);
         } else {
-          setError('No mentors data received');
+          setError('No mentor data received');
         }
       } catch (err) {
         console.error('Error fetching mentor data:', err);
@@ -107,7 +100,7 @@ const MentorDetailPage = () => {
     };
 
     fetchMentorData();
-  }, [navigate, mentorName]);
+  }, [navigate, mentorId]);
 
   // Function to handle date selection
   const handleDateSelect = (day, month = 12, year = 2024) => {

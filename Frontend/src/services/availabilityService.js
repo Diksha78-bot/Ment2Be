@@ -63,7 +63,7 @@ export const getAvailableSlots = async (mentorId, date) => {
   try {
     console.log(`📥 [${ACTIVE_BACKEND.toUpperCase()}] Fetching available slots for mentor ${mentorId} on ${date}`);
     
-    const response = await fetch(`${API_URL}/${mentorId}?date=${date}`, {
+    const response = await fetch(`${API_URL}/mentor/${mentorId}?date=${date}`, {
       method: 'GET',
       headers: getAuthHeader()
     });
@@ -83,14 +83,14 @@ export const getAvailableSlots = async (mentorId, date) => {
 };
 
 /**
- * Get all availability for authenticated mentor
+ * Get all availability for authenticated mentor (their own dashboard)
  * @returns {Promise<{success: boolean, data: Array}>}
  */
 export const getAllAvailability = async () => {
   try {
-    console.log(`📥 [${ACTIVE_BACKEND.toUpperCase()}] Fetching all availability for mentor`);
+    console.log(`📥 [${ACTIVE_BACKEND.toUpperCase()}] Fetching all availability for logged-in mentor`);
     
-    const response = await fetch(`${API_URL}/mentor/all`, {
+    const response = await fetch(`${API_URL}/my-availability`, {
       method: 'GET',
       headers: getAuthHeader()
     });

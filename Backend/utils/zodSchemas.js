@@ -10,6 +10,7 @@ export const registerSchema = z.object({
   password: z.string()
     .min(6, "Password must be at least 6 characters")
     .max(100, "Password cannot exceed 100 characters"),
+  phoneNumber: z.string().optional(),
   bio: z.string().optional(),
   hourlyRate: z.number().min(0, "Hourly rate must be positive").optional()
 });
@@ -21,6 +22,7 @@ export const loginSchema = z.object({
 
 export const updateUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").optional(),
+  phoneNumber: z.string().optional(),
   bio: z.string().optional(),
   hourlyRate: z.number().min(0, "Hourly rate must be positive").optional()
 });

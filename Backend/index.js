@@ -21,6 +21,9 @@ import taskRouter from './routes/task.routes.js';
 import twilioRouter from './routes/twilio.routes.js';
 import forumRouter from './routes/forum.routes.js';
 import availabilityRouter from './routes/availability.routes.js';
+import categoryRouter from './routes/category.routes.js';
+import uploadRouter from './routes/upload.routes.js';
+import aiRouter from './routes/ai.routes.js';
 import { handleSocketConnection, getRoomCount, getTotalParticipants } from './socket/socketHandlers.js';
 import { handleChatConnection, getActiveConversationCount, getTotalChatParticipants } from './socket/chatSocketHandlers.js';
 
@@ -35,6 +38,7 @@ const io = new Server(server, {
     origin: [
       "http://localhost:3000",
       "http://localhost:5173", // Vite default port
+      "https://k23-dx.vercel.app",
       process.env.FRONTEND_URL
     ].filter(Boolean), // Remove any undefined values
     methods: ["GET", "POST"]
@@ -128,6 +132,9 @@ app.use('/api/tasks', taskRouter); // Task management endpoints
 app.use('/api/twilio', twilioRouter); // Twilio Video endpoints
 app.use('/api/forum', forumRouter); // Forum Q&A endpoints
 app.use('/api/mentor-availability', availabilityRouter); // Mentor availability endpoints
+app.use('/api/categories', categoryRouter); // Category endpoints
+app.use('/api/upload', uploadRouter); // File upload endpoints
+app.use('/api/ai', aiRouter); // AI session insights endpoints
 
 // Initialize Socket.IO handlers
 handleSocketConnection(io);

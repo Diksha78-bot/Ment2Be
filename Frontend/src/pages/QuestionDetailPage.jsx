@@ -214,8 +214,26 @@ export default function QuestionDetailPage() {
                         className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={() => answer.author?.name && navigate(`/mentor-profile?mentor=${encodeURIComponent(answer.author.name)}`)}
                       >
-                        <div className="h-8 w-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-medium">
-                          {getInitials(answer.author?.name)}
+                        <div className="h-8 w-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-medium overflow-hidden flex-shrink-0">
+                          {answer.author?.profilePicture ? (
+                            <img 
+                              src={answer.author.profilePicture} 
+                              alt={answer.author?.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                if (e.target.nextElementSibling) {
+                                  e.target.nextElementSibling.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <span 
+                            style={{ display: answer.author?.profilePicture ? 'none' : 'flex' }}
+                            className="w-full h-full flex items-center justify-center bg-green-600"
+                          >
+                            {getInitials(answer.author?.name)}
+                          </span>
                         </div>
                         <div>
                           <p className="text-white font-medium hover:text-blue-400 transition-colors">{answer.author?.name || "Anonymous"}</p>

@@ -6,7 +6,7 @@ const MentorCard = ({ mentor }) => {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
-    navigate(`/mentor-profile?mentor=${encodeURIComponent(mentor.name)}`);
+    navigate(`/mentor-profile?mentor=${encodeURIComponent(mentor.name)}&mentorId=${mentor.id}`);
   };
 
   return (
@@ -18,11 +18,27 @@ const MentorCard = ({ mentor }) => {
         <div className="flex items-start">
           {/* Mentor Image */}
           <div className="relative mr-4">
-            <img
-              className="h-20 w-20 rounded-full object-cover"
-              src={mentor.image}
-              alt={mentor.name}
-            />
+            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center overflow-hidden">
+              {mentor.image ? (
+                <img
+                  className="h-20 w-20 rounded-full object-cover"
+                  src={mentor.image}
+                  alt={mentor.name}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    if (e.target.nextElementSibling) {
+                      e.target.nextElementSibling.style.display = 'flex';
+                    }
+                  }}
+                />
+              ) : null}
+              <span 
+                style={{ display: mentor.image ? 'none' : 'flex' }}
+                className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg"
+              >
+                {mentor.name?.charAt(0).toUpperCase() || 'M'}
+              </span>
+            </div>
             {mentor.isOnline && (
               <div className="absolute bottom-0 right-0 h-4 w-4 bg-green-500 rounded-full border-2 border-white"></div>
             )}
@@ -49,18 +65,25 @@ const MentorCard = ({ mentor }) => {
               {mentor.tags.map((tag, index) => (
                 <span
                   key={index}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#535353] text-[#b3b3b3] border-cyan-400/30"
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#535353] text-white border-cyan-400/30"
                 >
                   {tag}
                 </span>
               ))}
             </div>
 
+            {/* Availability Status Badges */}
+            <div className="mt-3 flex items-center gap-2 mb-3">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: '#da8c18' }}>
+                2 available
+              </span>
+            </div>
+
             <div className="mt-4 flex justify-between items-center">
               <div className="flex items-center text-sm text-gray-400">
-                <FiClock className="mr-1" />
+                <FiClock className="mr-1" size={16} style={{ color: '#73501c' }} />
                 <span>15 min</span>
-                <FiMessageSquare className="ml-3 mr-1" />
+                <FiMessageSquare className="ml-3 mr-1" size={16} style={{ color: '#73501c' }} />
                 <span>Video Call</span>
               </div>
               <div className="text-lg font-bold text-[#535353]">

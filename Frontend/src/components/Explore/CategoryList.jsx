@@ -1,15 +1,15 @@
 import React from 'react';
-import { FiUsers, FiStar, FiClock, FiMessageSquare, FiDollarSign, FiUser } from 'react-icons/fi';
+import { FiUsers, FiStar, FiClock, FiMessageSquare, FiDollarSign, FiUser, FiCode, FiGlobe } from 'react-icons/fi';
 
 const categories = [
-  { name: 'All Mentors', count: 24, icon: <FiUsers className="mr-2" /> },
-  { name: 'Software Engineering', count: 15, icon: <FiStar className="mr-2" /> },
-  { name: 'Product Management', count: 10, icon: <FiClock className="mr-2" /> },
-  { name: 'Career Guidance', count: 18, icon: <FiMessageSquare className="mr-2" /> },
-  { name: 'Business & Marketing', count: 12, icon: <FiDollarSign className="mr-2" /> },
-  { name: 'Design & UX', count: 9, icon: <FiUser className="mr-2" /> },
-  { name: 'Data Science & AI', count: 14, icon: <FiStar className="mr-2" /> },
-  { name: 'Web Development', count: 20, icon: <FiClock className="mr-2" /> },
+  { name: 'All Mentors', count: 24, icon: <FiUsers className="mr-2" size={18} style={{ color: '#73501c' }} /> },
+  { name: 'Software Engineering', count: 15, icon: <FiCode className="mr-2" size={18} style={{ color: '#73501c' }} /> },
+  { name: 'Product Management', count: 10, icon: <FiClock className="mr-2" size={18} style={{ color: '#73501c' }} /> },
+  { name: 'Career Guidance', count: 18, icon: <FiMessageSquare className="mr-2" size={18} style={{ color: '#73501c' }} /> },
+  { name: 'Business & Marketing', count: 12, icon: <FiDollarSign className="mr-2" size={18} style={{ color: '#73501c' }} /> },
+  { name: 'Design & UX', count: 9, icon: <FiStar className="mr-2" size={18} style={{ color: '#73501c' }} /> },
+  { name: 'Data Science & AI', count: 14, icon: <FiStar className="mr-2" size={18} style={{ color: '#73501c' }} /> },
+  { name: 'Web Development', count: 20, icon: <FiGlobe className="mr-2" size={18} style={{ color: '#73501c' }} /> },
 ];
 
 const CategoryList = ({ activeCategory, onCategoryClick }) => {
@@ -31,7 +31,7 @@ const CategoryList = ({ activeCategory, onCategoryClick }) => {
               {category.icon}
               <span className="text-sm font-medium">{category.name}</span>
             </div>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-gray-300">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-gray-300" style={{ backgroundColor: '#202327' }}>
               {category.count}
             </span>
           </div>

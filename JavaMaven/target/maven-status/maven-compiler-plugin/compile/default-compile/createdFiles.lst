@@ -9,6 +9,7 @@ com\app\App.class
 com\app\chat\ChatController$ConversationData.class
 com\app\controllers\TaskController$18.class
 com\app\controllers\TaskController$28.class
+com\app\karma\KarmaController$ProfileProgressRequest.class
 com\app\controllers\TaskController$25.class
 com\app\service\ConversationService.class
 com\app\controllers\TaskController$15.class

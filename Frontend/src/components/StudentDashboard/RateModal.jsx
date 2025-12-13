@@ -1,0 +1,88 @@
+import React, { useState } from 'react';
+
+const RateModal = ({ isOpen, onClose, onSubmit, sessionId, bookingId, mentorName }) => {
+  const [rating, setRating] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (rating === 0) {
+      alert('Please select a rating');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:4000/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          sessionId: sessionId || bookingId,
+          bookingId: bookingId || sessionId,
+          rating,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Rating submitted!');
+        setRating(0);
+        onClose();
+      } else {
+        alert('Error: ' + data.message);
+      }
+    } catch (error) {
+      alert('Error: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-[#121212] rounded-lg p-6 w-96 border border-gray-700">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-white">Rate {mentorName}</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+        </div>
+
+        <div className="flex justify-center gap-3 mb-6">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              onClick={() => setRating(star)}
+              className={`text-3xl transition-colors ${
+                star <= rating ? 'text-yellow-400' : 'text-gray-600'
+              }`}
+            >
+              ★
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading || rating === 0}
+            className="flex-1 px-4 py-2 bg-yellow-500 text-black rounded hover:bg-yellow-600 disabled:opacity-50"
+          >
+            {loading ? 'Submitting...' : 'Submit'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RateModal;

@@ -43,7 +43,7 @@ export async function GetCurrentUser(req, res) {
 export async function UpdateCurrentUser(req, res) {
   try {
     const userId = req.user.id;
-    const { name, bio, hourlyRate } = req.validatedData;
+    const { name, phoneNumber, bio, hourlyRate } = req.validatedData;
 
     const user = await User.findById(userId);
     if (!user) {
@@ -54,6 +54,7 @@ export async function UpdateCurrentUser(req, res) {
     }
 
     if (name) user.name = name;
+    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
     if (bio !== undefined) user.bio = bio;
     if (hourlyRate !== undefined && user.role === 'mentor') {
       if (hourlyRate < 0) {
@@ -104,7 +105,7 @@ export async function UpdateCurrentUser(req, res) {
 export async function UpdateStudentProfile(req, res) {
   try {
     const userId = req.user.id;
-    const { bio, skills, interests, goals, linkedIn, github, portfolio } = req.body;
+    const { bio, skills, interests, goals, phoneNumber, linkedIn, github, portfolio } = req.body;
 
     const user = await User.findById(userId);
     if (!user) {
@@ -158,34 +159,58 @@ export async function UpdateStudentProfile(req, res) {
         : Array.isArray(interests) ? interests : [];
     }
     if (goals) user.goals = goals;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
     if (linkedIn) user.socialLinks.linkedIn = linkedIn;
     if (github) user.socialLinks.github = github;
     if (portfolio) user.socialLinks.portfolio = portfolio;
 
-    // Mark profile as complete
-    user.isProfileComplete = true;
+    // Calculate profile completion percentage
+    const profileFields = {
+      bio: !!user.bio,
+      skills: user.skills && user.skills.length > 0,
+      interests: user.interests && user.interests.length > 0,
+      goals: !!user.goals,
+      phoneNumber: !!user.phoneNumber,
+      profilePicture: !!user.profilePicture,
+      linkedIn: !!user.socialLinks?.linkedIn,
+      github: !!user.socialLinks?.github
+    };
+    
+    const completedFields = Object.values(profileFields).filter(Boolean).length;
+    const totalFields = Object.keys(profileFields).length;
+    const completionPercentage = Math.round((completedFields / totalFields) * 100);
+    
+    // Only mark profile as complete if at least 75% is filled
+    const wasProfileComplete = user.isProfileComplete;
+    user.isProfileComplete = completionPercentage >= 75;
+    user.profileCompletionPercentage = completionPercentage;
 
     await user.save();
 
-    // Call Java microservice to calculate karma points for profile completion
-    try {
-      console.log('Calling Java microservice to award profile completion karma...');
-      const axios = (await import('axios')).default;
-      const JAVA_KARMA_API = process.env.JAVA_KARMA_API || 'http://localhost:8081/api/karma';
-      
-      const response = await axios.get(`${JAVA_KARMA_API}/profile-complete`, {
-        timeout: 5000
-      });
-      
-      if (response.data && response.data.karmaPoints) {
-        // Award karma points from Java calculation
-        user.karmaPoints = (user.karmaPoints || 0) + response.data.karmaPoints;
-        await user.save();
-        console.log(`Profile completion karma awarded: ${response.data.karmaPoints} points. Total: ${user.karmaPoints}`);
+    // Call Java microservice to calculate karma points based on profile progress
+    // Only award karma if profile wasn't already complete and now meets threshold
+    if (!wasProfileComplete && user.isProfileComplete) {
+      try {
+        console.log('Calling Java microservice to award profile completion karma...');
+        const axios = (await import('axios')).default;
+        const JAVA_KARMA_API = process.env.JAVA_KARMA_API || 'http://localhost:8081/api/karma';
+        
+        const response = await axios.post(`${JAVA_KARMA_API}/profile-progress`, {
+          completionPercentage: completionPercentage,
+          completedFields: completedFields,
+          totalFields: totalFields
+        }, {
+          timeout: 5000
+        });
+        
+        if (response.data && response.data.karmaPoints) {
+          user.karmaPoints = (user.karmaPoints || 0) + response.data.karmaPoints;
+          await user.save();
+          console.log(`Profile completion karma awarded: ${response.data.karmaPoints} points. Total: ${user.karmaPoints}`);
+        }
+      } catch (karmaError) {
+        console.error('Error calling Java karma service:', karmaError.message);
       }
-    } catch (karmaError) {
-      console.error('Error calling Java karma service:', karmaError.message);
-      // Continue even if karma service fails - profile update is still successful
     }
 
     const updatedUser = await User.findById(userId).select('-password');

@@ -25,6 +25,7 @@ export async function CreateOrUpdateMentorProfile(req, res) {
       githubProfile,
       hourlyRate,
       skills,
+      phoneNumber,
       isProfileComplete = true
     } = req.body;
     const userId = req.user.id;
@@ -71,6 +72,15 @@ export async function CreateOrUpdateMentorProfile(req, res) {
       // Create new profile
       profile = new MentorProfile(profileData);
       await profile.save();
+    }
+
+    // Update user's phone number if provided
+    if (phoneNumber !== undefined) {
+      await User.findByIdAndUpdate(
+        userId,
+        { phoneNumber: phoneNumber },
+        { new: true }
+      );
     }
 
     // If profile is marked as complete and this is a new profile, award karma points
@@ -131,10 +141,14 @@ export async function GetAllMentors(req, res) {
     }
 
     const profiles = await MentorProfile.find(profileFilters)
-      .populate('user', 'name email role createdAt');
+      .populate({
+        path: 'user',
+        select: 'name email role createdAt',
+        match: { role: 'mentor' }
+      });
 
     const mentors = await Promise.all(
-      profiles.map(async (profile) => {
+      profiles.filter(profile => profile.user !== null).map(async (profile) => {
         const mentorId = profile.user?._id;
 
         const sessions = await Session.find({ mentor: mentorId, status: 'completed' }).select('_id');
@@ -155,6 +169,7 @@ export async function GetAllMentors(req, res) {
           name: profile.user?.name,
           email: profile.user?.email,
           role: profile.user?.role,
+          createdAt: profile.user?.createdAt,
           headline: profile.headline,
           company: profile.company,
           experience: profile.experience,
@@ -188,6 +203,97 @@ export async function GetAllMentors(req, res) {
     res.status(500).json({
       success: false,
       message: "Failed to fetch mentors"
+    });
+  }
+}
+
+export async function GetTopExperts(req, res) {
+  try {
+    const { limit = 3 } = req.query;
+
+    const profiles = await MentorProfile.find({ isProfileComplete: true })
+      .populate({
+        path: 'user',
+        select: 'name email role createdAt karmaPoints',
+        match: { role: 'mentor' }
+      });
+
+    const mentors = await Promise.all(
+      profiles.map(async (profile) => {
+        const mentorId = profile.user?._id;
+
+        // Get completed sessions count
+        const completedSessions = await Session.find({ 
+          mentor: mentorId, 
+          status: 'completed' 
+        }).countDocuments();
+
+        // Get unique mentees (students) count
+        const uniqueMentees = await Session.find({ 
+          mentor: mentorId, 
+          status: 'completed' 
+        }).distinct('student');
+        const totalMentees = uniqueMentees.length;
+
+        // Get average rating
+        const sessions = await Session.find({ mentor: mentorId, status: 'completed' }).select('_id');
+        const sessionIds = sessions.map((s) => s._id);
+
+        let averageRating = 0;
+        let totalReviews = 0;
+
+        if (sessionIds.length) {
+          const reviews = await Review.find({ session: { $in: sessionIds } }).select('rating');
+          totalReviews = reviews.length;
+          const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+          averageRating = totalReviews ? Number((totalRating / totalReviews).toFixed(2)) : 0;
+        }
+
+        return {
+          _id: mentorId,
+          name: profile.user?.name,
+          email: profile.user?.email,
+          role: profile.user?.role,
+          createdAt: profile.user?.createdAt,
+          headline: profile.headline,
+          company: profile.company,
+          experience: profile.experience,
+          bio: profile.bio,
+          hourlyRate: profile.hourlyRate,
+          profilePicture: profile.profilePicture || null,
+          skills: profile.skills,
+          karmaPoints: profile.user?.karmaPoints || 0,
+          totalSessions: completedSessions,
+          totalMentees,
+          averageRating,
+          totalReviews,
+          isOnline: false,
+        };
+      })
+    );
+
+    // Sort by: karma points (primary), total sessions (secondary), total mentees (tertiary)
+    mentors.sort((a, b) => {
+      if (b.karmaPoints !== a.karmaPoints) {
+        return b.karmaPoints - a.karmaPoints;
+      }
+      if (b.totalSessions !== a.totalSessions) {
+        return b.totalSessions - a.totalSessions;
+      }
+      return b.totalMentees - a.totalMentees;
+    });
+
+    res.status(200).json({
+      success: true,
+      count: mentors.slice(0, Number(limit)).length,
+      mentors: mentors.slice(0, Number(limit)),
+    });
+  } catch (error) {
+    console.error("Get top experts error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch top experts",
+      error: error.message
     });
   }
 }

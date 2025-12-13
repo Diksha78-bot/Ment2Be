@@ -3,105 +3,169 @@ import Session from "../models/Session.model.js";
 
 export async function CreateReviewHandler(req, res) {
   try {
-    const { sessionId, rating, review } = req.validatedData;
+    const { sessionId, bookingId, rating, review } = req.body;
+    const userId = req.user?.id;
 
-    const session = await Session.findById(sessionId);
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        message: "Session not found"
-      });
-    }
+    console.log('CreateReviewHandler called with:', { sessionId, bookingId, rating, userId });
 
-    if (session.status !== 'completed') {
+    if (!rating) {
       return res.status(400).json({
         success: false,
-        message: "Can only review completed sessions"
+        message: "Rating is required"
       });
     }
 
-    const userId = req.user.id;
-    if (session.student.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: "Only students can review their sessions"
-      });
-    }
-
-    const existingReview = await Review.findOne({ session: sessionId });
-    if (existingReview) {
+    if (!sessionId && !bookingId) {
       return res.status(400).json({
         success: false,
-        message: "Session already reviewed"
+        message: "Session ID or Booking ID is required"
       });
+    }
+
+    // Import Booking model to get mentor info
+    const Booking = (await import('../models/booking.model.js')).default;
+
+    let mentorId = null;
+    let session = null;
+
+    // Try to find booking to get mentor ID
+    if (bookingId) {
+      const booking = await Booking.findById(bookingId).populate('mentor');
+      if (booking) {
+        mentorId = booking.mentor?._id || booking.mentorId;
+        console.log('Mentor ID from booking:', mentorId);
+      }
+    }
+
+    // Try to find session
+    if (sessionId) {
+      session = await Session.findById(sessionId);
+      if (session && !mentorId) {
+        mentorId = session.mentorId;
+      }
     }
 
     const newReview = await Review.create({
-      session: sessionId,
+      session: sessionId || bookingId,
+      booking: bookingId,
+      mentor: mentorId,
       rating,
-      review: review || undefined
+      review: review || undefined,
+      student: userId
     });
 
     const populatedReview = await Review.findById(newReview._id)
+      .populate('student', 'name profilePicture')
+      .populate('mentor', 'name')
       .populate({
         path: 'session',
-        populate: [
-          { path: 'mentor', select: 'name email' },
-          { path: 'student', select: 'name email' }
-        ]
+        select: 'mentorId studentId startTime endTime'
       });
+
+    console.log('Review created successfully:', populatedReview);
 
     res.status(201).json({
       success: true,
-      review: populatedReview
+      message: "Review created successfully",
+      data: populatedReview
     });
   } catch (error) {
     console.error("Create review error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to create review"
+      message: "Failed to create review",
+      error: error.message
     });
   }
 }
 
 export async function GetReviewsHandler(req, res) {
   try {
-    const { mentor } = req.query;
+    const { mentor, mentorId, studentId } = req.query;
+    // Try both req.user.id and req.user._id since JWT might use either
+    const userId = req.user?.id || req.user?._id;
 
-    if (!mentor) {
+    console.log('GetReviewsHandler - userId:', userId, 'studentId:', studentId, 'mentorId:', mentorId);
+    console.log('GetReviewsHandler - req.user:', req.user);
+
+    // If studentId is provided, fetch reviews submitted by that student
+    if (studentId) {
+      const reviews = await Review.find({ student: studentId })
+        .populate('student', 'name profilePicture')
+        .populate('mentor', 'name profilePicture')
+        .sort({ createdAt: -1 });
+
+      console.log('Reviews for student:', studentId, 'count:', reviews.length);
+
+      return res.status(200).json({
+        success: true,
+        count: reviews.length,
+        reviews
+      });
+    }
+
+    // If no studentId but user is authenticated, fetch their own reviews
+    if (userId) {
+      const reviews = await Review.find({ student: userId })
+        .populate('student', 'name profilePicture')
+        .populate('mentor', 'name profilePicture')
+        .sort({ createdAt: -1 });
+
+      console.log('Reviews for authenticated user:', userId, 'count:', reviews.length);
+
+      return res.status(200).json({
+        success: true,
+        count: reviews.length,
+        reviews
+      });
+    }
+
+    // Otherwise, fetch reviews for a mentor
+    const currentMentorId = mentor || mentorId;
+
+    if (!currentMentorId) {
       return res.status(400).json({
         success: false,
         message: "Mentor ID is required"
       });
     }
 
-    const sessions = await Session.find({ mentor, status: 'completed' }).select('_id');
-    const sessionIds = sessions.map(s => s._id);
-
-    const reviews = await Review.find({ session: { $in: sessionIds } })
+    // Find all reviews for this mentor (from bookings or sessions or direct mentor field)
+    const reviews = await Review.find({
+      $or: [
+        { mentor: currentMentorId },
+        { 'session.mentor': currentMentorId },
+        { 'session.mentorId': currentMentorId }
+      ]
+    })
+      .populate('student', 'name profilePicture')
       .populate({
         path: 'session',
+        select: 'mentorId studentId startTime endTime',
         populate: [
-          { path: 'mentor', select: 'name email' },
-          { path: 'student', select: 'name' }
+          { path: 'mentorId', select: 'name' },
+          { path: 'studentId', select: 'name profilePicture' }
         ]
       })
       .sort({ createdAt: -1 });
 
-    const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
-    const averageRating = reviews.length > 0 ? (totalRating / reviews.length).toFixed(2) : 0;
+    console.log('Reviews found for mentor:', currentMentorId, 'count:', reviews.length);
+
+    const totalRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+    const averageRating = reviews.length > 0 ? parseFloat((totalRating / reviews.length).toFixed(2)) : 0;
 
     res.status(200).json({
       success: true,
       count: reviews.length,
-      averageRating: parseFloat(averageRating),
+      averageRating,
       reviews
     });
   } catch (error) {
     console.error("Get reviews error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch reviews"
+      message: "Failed to fetch reviews",
+      error: error.message
     });
   }
 }

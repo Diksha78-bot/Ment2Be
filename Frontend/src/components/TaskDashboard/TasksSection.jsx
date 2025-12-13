@@ -6,10 +6,10 @@ import { toast } from "react-toastify";
 const tabs = ["All", "In Progress", "Pending Review", "Completed"];
 
 const statusConfig = {
-  "in-progress": { label: "In Progress", color: "text-gray-300", bg: "bg-[#2a3038]" },
-  "pending-review": { label: "Pending Review", color: "text-gray-300", bg: "bg-[#2a3038]" },
-  completed: { label: "Completed", color: "text-gray-300", bg: "bg-[#2a3038]" },
-  "not-started": { label: "Not Started", color: "text-gray-400", bg: "bg-gray-900" },
+  "in-progress": { label: "In Progress", color: "text-white", bg: "bg-[#da8c18]" },
+  "pending-review": { label: "Pending Review", color: "text-white", bg: "bg-[#da8c18]" },
+  completed: { label: "Completed", color: "text-white", bg: "bg-[#da8c18]" },
+  "not-started": { label: "Not Started", color: "text-white", bg: "bg-[#da8c18]" },
 };
 
 const priorityBorder = {
@@ -178,11 +178,11 @@ export function TasksSection({ selectedMentee, onCreateTask }) {
           </div>
           <div className="flex gap-2">
             <button className="flex items-center gap-2 px-4 py-2 border border-gray-600 text-gray-300 bg-transparent rounded-lg hover:bg-[#2a3038]/40 transition-colors">
-              <Filter className="w-4 h-4" />
+              <Filter className="w-4 h-4 text-blue-400" />
               Filter
             </button>
             <button className="flex items-center gap-2 px-4 py-2 border border-gray-600 text-gray-300 bg-transparent rounded-lg hover:bg-[#2a3038]/40 transition-colors">
-              <Calendar className="w-4 h-4" />
+              <Calendar className="w-4 h-4 text-green-400" />
               Date Range
             </button>
           </div>
@@ -207,7 +207,12 @@ export function TasksSection({ selectedMentee, onCreateTask }) {
                     : 'text-gray-400 hover:text-gray-300'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className={`w-4 h-4 ${
+                  filter.key === 'all' ? 'text-purple-400' :
+                  filter.key === 'in-progress' ? 'text-yellow-400' :
+                  filter.key === 'pending-review' ? 'text-orange-400' :
+                  'text-green-400'
+                }`} />
                 {filter.label}
                 <span className="text-sm ml-2 text-gray-500">
                   ({getTaskCount(filter.key)})
@@ -297,15 +302,15 @@ export function TasksSection({ selectedMentee, onCreateTask }) {
 
                       <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-400">
                         <span className="inline-flex items-center gap-1.5">
-                          <User className="w-4 h-4" />
+                          <User className="w-4 h-4 text-blue-400" />
                           {task.menteeName || task.mentee || 'Student'}
                         </span>
                         <span className="inline-flex items-center gap-1.5">
-                          <Target className="w-4 h-4" />
+                          <Target className="w-4 h-4 text-red-400" />
                           {task.category}
                         </span>
                         <span className="inline-flex items-center gap-1.5">
-                          <Clock className="w-4 h-4" />
+                          <Clock className="w-4 h-4 text-cyan-400" />
                           {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : task.deadline}
                         </span>
                       </div>
@@ -338,7 +343,7 @@ export function TasksSection({ selectedMentee, onCreateTask }) {
                         className="p-1 rounded hover:bg-blue-700 transition-colors text-blue-400 hover:text-blue-300"
                         title="Create another task for this user"
                       >
-                        <Plus className="w-5 h-5" />
+                        <Plus className="w-5 h-5 text-green-400" />
                       </button>
                     </div>
                   </div>
@@ -355,17 +360,17 @@ export function TasksSection({ selectedMentee, onCreateTask }) {
                       className="px-3 py-1.5 border border-gray-600 text-gray-300 text-xs bg-transparent rounded-lg hover:bg-[#2a3038]/40 transition-colors flex items-center gap-2"
                     >
                       View Details
-                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                     </button>
                     <button className="p-1.5 text-gray-400 hover:text-gray-300 hover:bg-[#2a3038]/40 rounded-lg transition-colors">
-                      <MessageSquare className="w-4 h-4" />
+                      <MessageSquare className="w-4 h-4 text-indigo-400" />
                     </button>
                   </div>
                 </div>
 
                 {/* Expanded Details Section */}
                 {isExpanded && (
-                  <div className="border-t border-gray-700 bg-gray-950 p-4 space-y-4">
+                  <div className="border-t border-gray-700 bg-[#121212] p-4 space-y-4">
                     {/* Description */}
                     {task.description && (
                       <div>
@@ -398,7 +403,7 @@ export function TasksSection({ selectedMentee, onCreateTask }) {
                           {task.uploadedFiles.map((file, idx) => (
                             <div key={idx} className="flex items-center justify-between p-3 bg-[#2a3038] rounded-lg border border-gray-700">
                               <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <File className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                                <File className="w-4 h-4 text-orange-400 flex-shrink-0" />
                                 <div className="min-w-0 flex-1">
                                   <p className="text-sm text-white truncate">{file.name || file}</p>
                                   {file.uploadedAt && (
@@ -407,7 +412,7 @@ export function TasksSection({ selectedMentee, onCreateTask }) {
                                 </div>
                               </div>
                               <button className="p-1.5 text-gray-400 hover:text-gray-300 hover:bg-[#2a3038]/40 rounded transition-colors flex-shrink-0">
-                                <Download className="w-4 h-4" />
+                                <Download className="w-4 h-4 text-cyan-400" />
                               </button>
                             </div>
                           ))}
@@ -418,7 +423,7 @@ export function TasksSection({ selectedMentee, onCreateTask }) {
                     {/* No Files Message */}
                     {(!task.uploadedFiles || task.uploadedFiles.length === 0) && (
                       <div className="text-center py-4">
-                        <File className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                        <File className="w-8 h-8 text-gray-500 mx-auto mb-2" />
                         <p className="text-sm text-gray-400">No files submitted yet</p>
                       </div>
                     )}
@@ -438,7 +443,7 @@ export function TasksSection({ selectedMentee, onCreateTask }) {
                             </>
                           ) : (
                             <>
-                              <CheckCircle2 className="w-4 h-4" />
+                              <CheckCircle2 className="w-4 h-4 text-green-400" />
                               Mark as Reviewed
                             </>
                           )}

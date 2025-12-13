@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiCalendar, FiClock, FiUser, FiDollarSign, FiEye, FiMapPin, FiRefreshCw, FiMessageSquare, FiVideo, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiChevronLeft, FiChevronRight, FiCheck } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiUser, FiDollarSign, FiEye, FiMapPin, FiRefreshCw, FiMessageSquare, FiVideo, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiChevronLeft, FiChevronRight, FiCheck, FiMail, FiBook } from 'react-icons/fi';
 import MentorNavbar from '../components/MentorDashboard/Navbar';
 import { StudentSessionCard } from '../components/MentorDashboard/StudentSessionCard';
 import { EnhancedStudentCard } from '../components/MentorDashboard/EnhancedStudentCard';
@@ -701,17 +701,6 @@ const MentorMenteesPage = () => {
             </h3>
             <p className="text-[#b3b3b3]">{error}</p>
           </div>
-        ) : mentees.length === 0 ? (
-          <div className="bg-black border border-gray-700 rounded-xl p-12 text-center shadow-lg">
-            <div className="bg-gray-800 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FiUser className="w-10 h-10 text-[#535353]" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">No mentees yet</h3>
-            <p className="text-[#b3b3b3] mb-6">You haven't received any session bookings yet. Start by promoting your mentoring services!</p>
-            <button className="bg-white text-black px-6 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors">
-              View Profile
-            </button>
-          </div>
         ) : (
             <div className="space-y-8">
               {/* Quick Stats Overview */}
@@ -801,18 +790,112 @@ const MentorMenteesPage = () => {
                   
                   {/* Sessions Display */}
                   <div className="grid grid-cols-1 gap-6">
-                    {activeSessions.slice(currentSessionIndex, currentSessionIndex + 1).map((sessionData, index) => (
-                      <EnhancedStudentCard
-                        key={`${sessionData.student._id}-${index}`}
-                        student={sessionData.student}
-                        sessions={sessionData.sessions}
-                        onJoinSession={handleJoinSession}
-                        onConfirmSession={handleConfirmSession}
-                        onRejectSession={handleRejectSession}
-                        onCancelSession={handleCancelSession}
-                        formatDate={formatDate}
-                      />
-                    ))}
+                    {activeSessions.length > 0 ? (
+                      activeSessions.slice(currentSessionIndex, currentSessionIndex + 1).map((sessionData, index) => (
+                        <EnhancedStudentCard
+                          key={`${sessionData.student._id}-${index}`}
+                          student={sessionData.student}
+                          sessions={sessionData.sessions}
+                          onJoinSession={handleJoinSession}
+                          onConfirmSession={handleConfirmSession}
+                          onRejectSession={handleRejectSession}
+                          onCancelSession={handleCancelSession}
+                          formatDate={formatDate}
+                        />
+                      ))
+                    ) : (
+                      <div className="bg-[#121212] border borde[Backend Config] API URL: http://localhost:8081/api
+availabilityService.js:64 📥 [NODEJS] Fetching available slots for mentor 6929eb49ff37b3c981e9b245 on 2026-01-11
+availabilityService.js:77 ✅ [NODEJS] Found 0 available slots
+BookSession.jsx:105 📅 Availability API Response: {success: true, availableSlots: Array(0), message: 'No availability found for this date'}
+BookSession.jsx:106 📋 Available slots: []r-gray-700 rounded-xl overflow-visible shadow-lg relative">
+                        {/* Empty Card Header */}
+                        <div className="bg-gradient-to-r from-[#1a1a1a] to-[#121212] p-6 border-b border-gray-700">
+                          <div className="flex items-start gap-4">
+                            {/* Avatar */}
+                            <div className="relative">
+                              <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center text-white text-xl font-bold border-2 border-gray-600">
+                                <FiUser className="w-8 h-8 text-gray-600" />
+                              </div>
+                            </div>
+
+                            {/* Student Info */}
+                            <div className="flex-1">
+                              <h3 className="text-xl font-bold text-gray-600 mb-1">No Mentee Yet</h3>
+                              <div className="flex items-center gap-3 text-sm text-gray-600">
+                                <span className="flex items-center gap-1">
+                                  <FiMail className="w-3 h-3" />
+                                  No contact information
+                                </span>
+                              </div>
+                              
+                              {/* Quick Stats */}
+                              <div className="flex items-center gap-4 mt-3 flex-wrap">
+                                <div className="flex items-center gap-1 text-xs">
+                                  <FiBook className="w-3 h-3 text-gray-700" />
+                                  <span className="text-gray-600 font-semibold">0</span>
+                                  <span className="text-gray-700">Total</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-xs">
+                                  <FiCheckCircle className="w-3 h-3 text-gray-700" />
+                                  <span className="text-gray-600 font-semibold">0</span>
+                                  <span className="text-gray-700">Done</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-xs">
+                                  <FiClock className="w-3 h-3 text-gray-700" />
+                                  <span className="text-gray-600 font-semibold">0</span>
+                                  <span className="text-gray-700">Upcoming</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-xs">
+                                  <FiClock className="w-3 h-3 text-gray-700" />
+                                  <span className="text-gray-600 font-semibold">0h</span>
+                                  <span className="text-gray-700">Total</span>
+                                </div>
+                              </div>
+
+                              {/* Availability Status */}
+                              <div className="flex items-center gap-2 mt-3">
+                                <span className="px-3 py-1 rounded-full text-xs font-semibold text-gray-600 bg-gray-800 border border-gray-700">
+                                  0 available
+                                </span>
+                                <span className="px-3 py-1 rounded-full text-xs font-semibold text-gray-600 bg-gray-800 border border-gray-700">
+                                  0 unavailable
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Session Selector */}
+                        <div className="p-4 bg-[#1a1a1a] border-b border-gray-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold text-gray-700">Select Session (0 total)</span>
+                          </div>
+                          <div className="text-center py-6 text-gray-700 text-sm">
+                            No sessions booked yet
+                          </div>
+                        </div>
+
+                        {/* Session Details */}
+                        <div className="p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-lg font-semibold text-gray-600">Session Details</h4>
+                          </div>
+
+                          <div className="flex items-center justify-center min-h-64">
+                            <div className="text-center">
+                              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center mx-auto mb-4 opacity-50">
+                                <FiCalendar className="w-10 h-10 text-gray-700" />
+                              </div>
+                              <p className="text-gray-600 font-medium mb-2">No session details available</p>
+                              <p className="text-gray-700 text-sm max-w-md mx-auto">
+                                You haven't received any session bookings yet. Students will be able to book sessions with you based on your available time slots.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

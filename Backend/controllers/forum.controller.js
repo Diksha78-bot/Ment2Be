@@ -8,12 +8,56 @@ export const getAllQuestions = async (req, res) => {
     const { page = 1, limit = 10, sort = '-createdAt' } = req.query;
     const skip = (page - 1) * limit;
 
-    const questions = await ForumQuestion.find()
+    let questions = await ForumQuestion.find()
       .populate('author', 'name email profilePicture')
       .populate('answers.author', 'name email profilePicture')
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit));
+
+    // Fetch MentorProfile pictures for question authors and answer authors
+    const MentorProfile = (await import('../models/mentorProfile.model.js')).default;
+    
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
+      
+      // Get profile picture for question author
+      if (question.author && question.author._id) {
+        // First try to get from MentorProfile (for mentors)
+        const mentorProfile = await MentorProfile.findOne({ user: question.author._id });
+        if (mentorProfile && mentorProfile.profilePicture) {
+          question.author.profilePicture = mentorProfile.profilePicture;
+          console.log(`🖼️ Question author ${question.author.name} (${question.author._id}): Found in MentorProfile`);
+        } else {
+          // If not found in MentorProfile, use the one from User model (already populated)
+          console.log(`🖼️ Question author ${question.author.name} (${question.author._id}): Using User model picture - ${question.author.profilePicture ? 'YES' : 'NO'}`);
+        }
+      }
+      
+      // Get profile pictures for answer authors
+      if (question.answers && question.answers.length > 0) {
+        for (let j = 0; j < question.answers.length; j++) {
+          const answer = question.answers[j];
+          if (answer.author && answer.author._id) {
+            const mentorProfile = await MentorProfile.findOne({ user: answer.author._id });
+            console.log(`🖼️ Answer author ${answer.author.name} (${answer.author._id}):`, mentorProfile?.profilePicture ? 'Found' : 'Not found');
+            if (mentorProfile && mentorProfile.profilePicture) {
+              answer.author.profilePicture = mentorProfile.profilePicture;
+            }
+          }
+        }
+      }
+    }
+    
+    console.log('📋 Final questions with profile pictures:', JSON.stringify(questions.map(q => ({
+      title: q.title,
+      authorName: q.author?.name,
+      authorPicture: q.author?.profilePicture ? 'YES' : 'NO',
+      answers: q.answers?.map(a => ({
+        authorName: a.author?.name,
+        authorPicture: a.author?.profilePicture ? 'YES' : 'NO'
+      })) || []
+    })), null, 2));
 
     const total = await ForumQuestion.countDocuments();
 
@@ -42,9 +86,15 @@ export const getQuestionById = async (req, res) => {
     console.log(`🟢 [FORUM - NODE.JS] GET /api/forum/questions/:id - Fetching question ${req.params.id}`);
     const { id } = req.params;
 
-    const question = await ForumQuestion.findById(id)
-      .populate('author', 'name email profilePicture')
-      .populate('answers.author', 'name email profilePicture');
+    let question = await ForumQuestion.findById(id)
+      .populate({
+        path: 'author',
+        select: 'name email profilePicture'
+      })
+      .populate({
+        path: 'answers.author',
+        select: 'name email profilePicture'
+      });
 
     if (!question) {
       return res.status(404).json({
@@ -52,6 +102,34 @@ export const getQuestionById = async (req, res) => {
         message: 'Question not found'
       });
     }
+
+    // Fetch MentorProfile pictures for answers and ensure question author has picture
+    const MentorProfile = (await import('../models/mentorProfile.model.js')).default;
+    
+    // Check question author for MentorProfile picture
+    if (question.author && question.author._id) {
+      const mentorProfile = await MentorProfile.findOne({ user: question.author._id });
+      if (mentorProfile && mentorProfile.profilePicture) {
+        question.author.profilePicture = mentorProfile.profilePicture;
+      }
+    }
+    
+    // Check answer authors for MentorProfile pictures
+    if (question.answers && question.answers.length > 0) {
+      for (let i = 0; i < question.answers.length; i++) {
+        const answer = question.answers[i];
+        if (answer.author && answer.author._id) {
+          const mentorProfile = await MentorProfile.findOne({ user: answer.author._id });
+          if (mentorProfile && mentorProfile.profilePicture) {
+            // Add profilePicture from MentorProfile if it exists
+            answer.author.profilePicture = mentorProfile.profilePicture;
+          }
+        }
+      }
+    }
+
+    // Debug: Log the answers to verify profilePicture is populated
+    console.log('📋 Question answers:', JSON.stringify(question.answers, null, 2));
 
     res.status(200).json({
       success: true,

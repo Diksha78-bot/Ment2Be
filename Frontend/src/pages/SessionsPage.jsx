@@ -178,6 +178,25 @@ const SessionsPage = () => {
   const cancelledSessions = bookings.filter(booking => booking.status === 'cancelled');
 
   const SessionCard = ({ booking }) => {
+    // Check if session can be joined (within 5 minutes of start time)
+    const sessionDate = new Date(booking.sessionDate);
+    const now = new Date();
+    const timeDiff = sessionDate - now;
+    const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const canJoin = timeDiff <= fiveMinutes; // Can join if within 5 minutes or session has started
+    
+    // Format time until session
+    const formatTimeUntil = () => {
+      if (timeDiff <= 0) return null; // Session has started
+      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (days > 0) return `${days}d ${hours}h`;
+      if (hours > 0) return `${hours}h ${minutes}m`;
+      return `${minutes}m`;
+    };
+
     return (
       <div className="bg-[#121212] rounded-lg p-4 border border-gray-700 mb-3 hover:border-white transition-colors">
         <div className="flex items-start space-x-3">
@@ -216,12 +235,26 @@ const SessionsPage = () => {
         
         {!['completed', 'cancelled'].includes(booking.status) && (
           <div className="mt-3 pt-3 border-t border-gray-700">
-            <button
-              onClick={() => handleJoinSession(booking)}
-              className="w-full py-2 px-3 bg-white hover:bg-gray-200 text-gray-900 text-xs font-medium rounded transition-colors"
-            >
-              Join Session
-            </button>
+            {canJoin ? (
+              <button
+                onClick={() => handleJoinSession(booking)}
+                className="w-full py-2 px-3 bg-white hover:bg-gray-200 text-gray-900 text-xs font-medium rounded transition-colors"
+              >
+                Join Session
+              </button>
+            ) : (
+              <div className="text-center">
+                <button
+                  disabled
+                  className="w-full py-2 px-3 bg-gray-700 text-gray-400 text-xs font-medium rounded cursor-not-allowed"
+                >
+                  Join Session
+                </button>
+                <p className="text-[10px] text-gray-500 mt-1">
+                  Available in {formatTimeUntil()} (5 min before start)
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

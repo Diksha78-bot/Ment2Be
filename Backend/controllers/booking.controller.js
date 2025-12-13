@@ -154,7 +154,16 @@ const getUserBookings = async (req, res) => {
 
     const bookings = await Booking.find(query)
       .populate('student', 'name email profilePicture')
-      .populate('mentor', 'name email profilePicture')
+      .populate({
+        path: 'mentor',
+        select: 'name email profilePicture headline mentorProfile',
+        populate: {
+          path: 'mentorProfile',
+          select: 'profilePicture headline',
+          options: { strictPopulate: false }
+        },
+        options: { strictPopulate: false }
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -297,6 +306,17 @@ const updateBookingStatus = async (req, res) => {
     if (status === 'completed') {
       booking.sessionCompleted = true;
       booking.sessionEndTime = new Date();
+      
+      // Track actual session duration if provided
+      if (req.body.actualDuration !== undefined) {
+        booking.actualDuration = req.body.actualDuration;
+      }
+      if (req.body.sessionStartedAt) {
+        booking.sessionStartedAt = new Date(req.body.sessionStartedAt);
+      }
+      if (req.body.sessionEndedAt) {
+        booking.sessionEndedAt = new Date(req.body.sessionEndedAt);
+      }
     }
 
     booking.status = status;

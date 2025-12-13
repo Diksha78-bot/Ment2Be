@@ -24,8 +24,10 @@ const MentorDashboard = () => {
   const [socialEdit, setSocialEdit] = useState({
     githubProfile: false,
     linkedinProfile: false,
+    phoneNumber: false,
   });
   const [socialSaving, setSocialSaving] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
   const [showFullBio, setShowFullBio] = useState(false);
   const [isBioTruncated, setIsBioTruncated] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -36,6 +38,10 @@ const MentorDashboard = () => {
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [recentMentees, setRecentMentees] = useState([]);
   const [menteesLoading, setMenteesLoading] = useState(true);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [averageRating, setAverageRating] = useState(0);
+  const [activeReviewTab, setActiveReviewTab] = useState('videos'); // 'videos', 'ltm', 'session', 'trial'
   const [timeRefresh, setTimeRefresh] = useState(0); // Force re-render for dynamic time
   const fileInputRef = useRef(null);
   const bioRef = useRef(null);
@@ -59,6 +65,7 @@ const MentorDashboard = () => {
     experience: "",
     headline: "",
     bio: "",
+    phoneNumber: "",
     linkedinProfile: "",
     githubProfile: "",
   });
@@ -86,6 +93,7 @@ const MentorDashboard = () => {
         experience: profileData.experience || "",
         headline: profileData.headline || "",
         bio: profileData.bio || "",
+        phoneNumber: data.user.phoneNumber || "",
         linkedinProfile: profileData.linkedinProfile || "",
         githubProfile: profileData.githubProfile || "",
       });
@@ -112,6 +120,13 @@ const MentorDashboard = () => {
     fetchRecentMessages();
     fetchRecentMentees();
   }, [navigate]);
+
+  // Fetch reviews after profile is loaded
+  useEffect(() => {
+    if (profile?._id) {
+      fetchReviews();
+    }
+  }, [profile?._id]);
 
   // Update time display dynamically every 60 seconds
   useEffect(() => {
@@ -273,6 +288,48 @@ const MentorDashboard = () => {
     }
   };
 
+  const fetchReviews = async () => {
+    const token = localStorage.getItem("token");
+    if (!token || !profile?._id) {
+      console.log('fetchReviews: Missing token or profile ID');
+      setReviewsLoading(false);
+      return;
+    }
+
+    try {
+      setReviewsLoading(true);
+      console.log('Fetching reviews for mentor:', profile._id);
+      
+      const response = await fetch(`http://localhost:4000/api/reviews?mentorId=${profile._id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('Reviews API response status:', response.status);
+      const data = await response.json();
+      console.log('Reviews API response data:', data);
+      
+      if (response.ok) {
+        setReviews(data.reviews || []);
+        setAverageRating(data.averageRating || 0);
+        console.log('Reviews set successfully:', data.reviews?.length || 0, 'reviews');
+      } else {
+        console.error('Reviews API error:', data.message);
+        setReviews([]);
+        setAverageRating(0);
+      }
+    } catch (err) {
+      console.error('Error fetching reviews:', err);
+      setReviews([]);
+      setAverageRating(0);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
   const handleJoinSession = async (session) => {
     try {
       const token = localStorage.getItem('token');
@@ -327,6 +384,7 @@ const MentorDashboard = () => {
         ) || 0,
       headline: pick("headline"),
       bio: pick("bio"),
+      phoneNumber: overrides.phoneNumber ?? formData.phoneNumber ?? profile?.phoneNumber ?? "",
       linkedinProfile: pick("linkedinProfile"),
       githubProfile: pick("githubProfile"),
       skills: overrides.skills ?? skills,
@@ -452,6 +510,22 @@ const MentorDashboard = () => {
         ...prev,
         [field]: mentorProfile?.[field] || ''
       }));
+    } finally {
+      setSocialSaving(false);
+    }
+  };
+
+  const handlePhoneSave = async () => {
+    setSocialSaving(true);
+    try {
+      await saveProfile({ phoneNumber: phoneInput });
+      setSocialEdit((prev) => ({ ...prev, phoneNumber: false }));
+      // Refresh profile data to show updated phone number immediately
+      await fetchProfile();
+    } catch (error) {
+      console.error('Failed to update phone number:', error);
+      // Revert the input field on error
+      setPhoneInput(profile?.phoneNumber || '');
     } finally {
       setSocialSaving(false);
     }
@@ -601,6 +675,50 @@ const MentorDashboard = () => {
       })
     : "Unknown";
 
+  // Calculate mentor profile completion percentage
+  const calculateMentorProfileCompletion = (profile, mentorProfile) => {
+    if (!profile) return 0;
+    
+    const fieldChecks = [
+      { name: 'name', value: profile.name },
+      { name: 'email', value: profile.email },
+      { name: 'company', value: mentorProfile?.company },
+      { name: 'experience', value: mentorProfile?.experience },
+      { name: 'headline', value: mentorProfile?.headline },
+      { name: 'bio', value: mentorProfile?.bio },
+      { name: 'phoneNumber', value: profile.phoneNumber },
+      { name: 'profilePicture', value: mentorProfile?.profilePicture },
+      { name: 'linkedinProfile', value: mentorProfile?.linkedinProfile },
+      { name: 'githubProfile', value: mentorProfile?.githubProfile },
+      { name: 'skills', value: mentorProfile?.skills && mentorProfile.skills.length > 0 }
+    ];
+    
+    const completedFields = fieldChecks.filter(field => {
+      const value = field.value;
+      let isComplete = false;
+      if (typeof value === 'string') isComplete = value.trim().length > 0;
+      else if (typeof value === 'number') isComplete = value > 0;
+      else if (Array.isArray(value)) isComplete = value.length > 0;
+      else isComplete = Boolean(value);
+      
+      // Debug logging for missing fields
+      if (!isComplete) {
+        console.log(`❌ Missing field: ${field.name}`, value);
+      } else {
+        console.log(`✅ Complete field: ${field.name}`, value);
+      }
+      
+      return isComplete;
+    });
+    
+    const percentage = Math.round((completedFields.length / fieldChecks.length) * 100);
+    console.log(`📊 Profile completion: ${completedFields.length}/${fieldChecks.length} = ${percentage}%`);
+    
+    return percentage;
+  };
+
+  const profileCompletion = calculateMentorProfileCompletion(profile, mentorProfile);
+
   const primarySkill = skills[0] || profile?.skills?.[0]?.name;
   const skillsList = skills.length > 0 ? skills : profile?.skills || [];
   const experienceLabel = mentorProfile?.experience
@@ -673,7 +791,7 @@ const MentorDashboard = () => {
           <div className="flex flex-col items-center text-center space-y-4">
             {/* Profile Photo */}
             <div className="relative group">
-              <div className="relative h-40 w-35 rounded-lg bg-gray-700 overflow-hidden border-4 border-gray-600">
+              <div className="relative h-40 w-40 rounded-lg bg-gray-700 overflow-hidden border-4 border-gray-600">
                 {mentorProfile?.profilePicture ? (
                   <>
                     <img 
@@ -970,76 +1088,167 @@ const MentorDashboard = () => {
               
               {/* Tabs */}
               <div className="flex space-x-6 mb-6 border-b border-gray-600">
-                <button className="pb-2 text-sm font-medium text-white border-b-2 border-gray-400">
+                <button 
+                  onClick={() => setActiveReviewTab('videos')}
+                  className={`pb-2 text-sm font-medium transition-colors ${activeReviewTab === 'videos' ? 'text-white border-b-2 border-gray-400' : 'text-gray-400 hover:text-white'}`}
+                >
                   Placement Videos
                 </button>
-                <button className="pb-2 text-sm font-medium text-gray-400 hover:text-white">
-                  LTM Reviews
+                <button 
+                  onClick={() => setActiveReviewTab('ltm')}
+                  className={`pb-2 text-sm font-medium transition-colors ${activeReviewTab === 'ltm' ? 'text-white border-b-2 border-gray-400' : 'text-gray-400 hover:text-white'}`}
+                >
+                  Ratings
                 </button>
-                <button className="pb-2 text-sm font-medium text-gray-400 hover:text-white">
+                <button 
+                  onClick={() => setActiveReviewTab('session')}
+                  className={`pb-2 text-sm font-medium transition-colors ${activeReviewTab === 'session' ? 'text-white border-b-2 border-gray-400' : 'text-gray-400 hover:text-white'}`}
+                >
                   Session Reviews
                 </button>
-                <button className="pb-2 text-sm font-medium text-gray-400 hover:text-white">
+                <button 
+                  onClick={() => setActiveReviewTab('trial')}
+                  className={`pb-2 text-sm font-medium transition-colors ${activeReviewTab === 'trial' ? 'text-white border-b-2 border-gray-400' : 'text-gray-400 hover:text-white'}`}
+                >
                   Trial Reviews
                 </button>
               </div>
               
-              {/* Empty State */}
-              <div className="text-center py-8">
-                <div className="flex justify-center mb-6">
-                  <div className="relative">
-                    {/* Main testimonial bubble */}
-                    <div className="w-24 h-16 bg-gray-700 rounded-lg flex items-center justify-center relative">
-                      <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V1a1 1 0 011-1h2a1 1 0 011 1v18a1 1 0 01-1 1H4a1 1 0 01-1-1V1a1 1 0 011-1h2a1 1 0 011 1v3m0 0h8m-8 0H4a1 1 0 00-1 1v3a1 1 0 001 1h3m0 0h8m-8 0v8a1 1 0 001 1h6a1 1 0 001-1V9m-8 0V8a1 1 0 011-1h6a1 1 0 011 1v1" />
-                      </svg>
-                    </div>
-                    
-                    {/* Smaller bubbles */}
-                    <div className="absolute -top-2 -left-6 w-12 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
-                      <div className="w-6 h-6 bg-gray-500 rounded-full"></div>
-                    </div>
-                    
-                    <div className="absolute -top-1 -right-8 w-16 h-12 bg-gray-600 rounded-lg"></div>
-                    
-                    <div className="absolute -bottom-3 -left-4 w-10 h-8 bg-gray-600 rounded-lg flex items-center justify-center">
-                      <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
-                    </div>
-                    
-                    <div className="absolute -bottom-2 -right-6 w-14 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
-                      <div className="w-5 h-5 bg-gray-500 rounded-full"></div>
-                    </div>
-                    
-                    {/* User avatars */}
-                    <div className="absolute top-8 -left-2 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    
-                    <div className="absolute top-6 -right-2 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  </div>
+              {/* Reviews List - Filtered by Tab */}
+              {reviewsLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-400">Loading reviews...</p>
                 </div>
-                
-                <h3 className="text-lg font-medium text-white mb-2">No video reviews have been received yet.</h3>
-                <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
-                  Level up your profile with mentee testimonials. Boost your reputation and showcase them publicly.
-                </p>
-                
-                <button className="inline-flex items-center px-6 py-2 bg-transparent border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition-colors">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Get Testimonial
-                  <svg className="w-4 h-4 ml-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </button>
-              </div>
+              ) : (
+                <>
+                  {/* Placement Videos Tab */}
+                  {activeReviewTab === 'videos' && (
+                    <>
+                      {reviews.filter(r => r.review?.startsWith('http')).length > 0 ? (
+                        <div className="space-y-4">
+                          {reviews.filter(r => r.review?.startsWith('http')).slice(0, 3).map((review) => (
+                            <div key={review._id} className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center">
+                                  <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center mr-3">
+                                    {review.student?.profilePicture ? (
+                                      <img src={review.student.profilePicture} alt={review.student?.name} className="w-full h-full rounded-full object-cover" />
+                                    ) : (
+                                      <span className="text-white font-semibold text-sm">{review.student?.name?.charAt(0) || 'S'}</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-white font-medium text-sm">{review.student?.name || 'Anonymous'}</p>
+                                    <p className="text-gray-400 text-xs">{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</p>
+                                  </div>
+                                </div>
+                                {review.rating && (
+                                  <div className="flex">
+                                    {[...Array(5)].map((_, i) => (
+                                      <FiStar
+                                        key={i}
+                                        className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="bg-gray-700 rounded p-3 text-center">
+                                <p className="text-gray-300 text-xs mb-2">Video Testimonial</p>
+                                <a href={review.review} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-sm font-medium">
+                                  Watch Video →
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <svg className="w-12 h-12 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <h3 className="text-lg font-medium text-white mb-2">No video testimonials yet</h3>
+                          <p className="text-gray-400 text-sm">Video testimonials will appear here</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Ratings Tab */}
+                  {activeReviewTab === 'ltm' && (
+                    <>
+                      {reviews.filter(r => r.rating).length > 0 ? (
+                        <div className="space-y-4">
+                          {reviews.filter(r => r.rating).slice(0, 3).map((review) => (
+                            <div key={review._id} className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center">
+                                  <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center mr-3">
+                                    {review.student?.profilePicture ? (
+                                      <img src={review.student.profilePicture} alt={review.student?.name} className="w-full h-full rounded-full object-cover" />
+                                    ) : (
+                                      <span className="text-white font-semibold text-sm">{review.student?.name?.charAt(0) || 'S'}</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-white font-medium text-sm">{review.student?.name || 'Anonymous'}</p>
+                                    <p className="text-gray-400 text-xs">{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-2xl font-bold text-white">{review.rating}</span>
+                                  <span className="text-gray-400 text-sm">/5</span>
+                                </div>
+                                <div className="flex gap-1">
+                                  {[...Array(5)].map((_, i) => (
+                                    <FiStar
+                                      key={i}
+                                      className={`w-5 h-5 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <svg className="w-12 h-12 text-gray-600 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          <h3 className="text-lg font-medium text-white mb-2">No ratings yet</h3>
+                          <p className="text-gray-400 text-sm">Ratings will appear here</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Session Reviews Tab */}
+                  {activeReviewTab === 'session' && (
+                    <div className="text-center py-8">
+                      <svg className="w-12 h-12 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      <h3 className="text-lg font-medium text-white mb-2">No session reviews yet</h3>
+                      <p className="text-gray-400 text-sm">Session reviews will appear here</p>
+                    </div>
+                  )}
+
+                  {/* Trial Reviews Tab */}
+                  {activeReviewTab === 'trial' && (
+                    <div className="text-center py-8">
+                      <svg className="w-12 h-12 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <h3 className="text-lg font-medium text-white mb-2">No trial reviews yet</h3>
+                      <p className="text-gray-400 text-sm">Trial reviews will appear here</p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 
@@ -1076,6 +1285,16 @@ const MentorDashboard = () => {
                     onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                     placeholder="Your professional headline"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Company</label>
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                    placeholder="Current company or organization"
                   />
                 </div>
                 <div>
@@ -1310,6 +1529,114 @@ const MentorDashboard = () => {
                   </div>
                 )}
               </div>
+              
+              {/* Phone Number Section */}
+              <div className="border border-gray-600 rounded-lg p-4">
+                <p className="font-semibold text-white">Phone Number</p>
+                {profile?.phoneNumber ? (
+                  <p className="text-sm text-[#b3b3b3] break-words">
+                    {(() => {
+                      // Clean the phone number display to remove concatenated duplicates
+                      const rawPhone = profile.phoneNumber;
+                      const phoneMatch = rawPhone.match(/^(\+\d+)\s*(.+)$/);
+                      if (phoneMatch) {
+                        const [, countryCode, numberPart] = phoneMatch;
+                        const cleanNumberPart = numberPart.replace(/\D/g, '');
+                        // If number is longer than 10 digits, it's likely duplicated - take first 10
+                        const finalNumber = cleanNumberPart.length > 10 ? cleanNumberPart.substring(0, 10) : cleanNumberPart;
+                        return countryCode + ' ' + finalNumber;
+                      }
+                      return rawPhone;
+                    })()}
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-400">Add your phone number</p>
+                )}
+                {(editing || socialEdit.phoneNumber) && (
+                  <button
+                    onClick={() => {
+                      setSocialEdit((prev) => ({ ...prev, phoneNumber: !prev.phoneNumber }));
+                      if (!socialEdit.phoneNumber) {
+                        // Clean the phone number to remove any concatenated duplicates
+                        const rawPhone = profile?.phoneNumber || '';
+                        let cleanPhone = rawPhone;
+                        
+                        // Check if phone number has duplicated parts (like "+918544758216 8544758215")
+                        const phoneMatch = rawPhone.match(/^(\+\d+)\s*(.+)$/);
+                        if (phoneMatch) {
+                          const [, countryCode, numberPart] = phoneMatch;
+                          // Remove any duplicate digits that might be concatenated
+                          const cleanNumberPart = numberPart.replace(/\D/g, ''); // Keep only digits
+                          // If the number part is longer than expected (indicating duplication), take first 10 digits
+                          const finalNumber = cleanNumberPart.length > 10 ? cleanNumberPart.substring(0, 10) : cleanNumberPart;
+                          cleanPhone = countryCode + ' ' + finalNumber;
+                        }
+                        
+                        setPhoneInput(cleanPhone);
+                      }
+                    }}
+                    className="mt-2 text-xs font-medium text-[#535353] hover:text-white"
+                  >
+                    {socialEdit.phoneNumber ? "Close" : "Edit Phone Number"}
+                  </button>
+                )}
+                {socialEdit.phoneNumber && (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex gap-2">
+                      <select
+                        value={phoneInput?.startsWith('+') ? phoneInput.split(' ')[0] : '+91'}
+                        onChange={(e) => {
+                          const code = e.target.value;
+                          // Better regex to remove country code and any spaces/non-digits at start
+                          const number = phoneInput?.replace(/^\+\d+\s*/, '').replace(/^\D+/, '') || '';
+                          setPhoneInput(code + ' ' + number);
+                        }}
+                        className="w-28 px-2 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent text-sm"
+                      >
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+61">🇦🇺 +61</option>
+                        <option value="+86">🇨🇳 +86</option>
+                        <option value="+81">🇯🇵 +81</option>
+                        <option value="+49">🇩🇪 +49</option>
+                        <option value="+33">🇫🇷 +33</option>
+                        <option value="+971">🇦🇪 +971</option>
+                        <option value="+65">🇸🇬 +65</option>
+                      </select>
+                      <input
+                        type="tel"
+                        value={phoneInput?.replace(/^\+\d+\s*/, '').replace(/^\D+/, '') || ''}
+                        onChange={(e) => {
+                          const code = phoneInput?.startsWith('+') ? phoneInput.split(' ')[0] : '+91';
+                          // Only keep digits from input
+                          const cleanNumber = e.target.value.replace(/\D/g, '');
+                          setPhoneInput(code + ' ' + cleanNumber);
+                        }}
+                        placeholder="(555) 123-4567"
+                        className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="flex gap-2 text-sm">
+                      <button
+                        type="button"
+                        onClick={handlePhoneSave}
+                        className="px-3 py-1 bg-gray-600 text-white rounded"
+                        disabled={socialSaving}
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        className="px-3 py-1 border border-gray-600 rounded text-gray-300 hover:bg-gray-700"
+                        onClick={() => setSocialEdit((prev) => ({ ...prev, phoneNumber: false }))}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           )}
@@ -1336,11 +1663,24 @@ const MentorDashboard = () => {
             <div className="mb-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-gray-400">Mentor</span>
-                <span className="text-xs text-gray-400">Profile Complete</span>
+                <span className="text-xs text-gray-400">{profileCompletion}/100</span>
               </div>
               <div className="w-full bg-gray-700 rounded-full h-2">
-                <div className="h-2 rounded-full" style={{width: '100%', backgroundColor: '#da8c18'}}></div>
+                <div className="h-2 rounded-full" style={{width: `${profileCompletion}%`, backgroundColor: '#da8c18'}}></div>
               </div>
+              {profileCompletion < 100 && (
+                <div className="mt-2 p-2 bg-blue-600/10 border border-blue-600/20 rounded-lg">
+                  <div className="flex items-start space-x-2">
+                    <svg className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-blue-400 text-xs font-medium mb-1">Complete your profile</p>
+                      <p className="text-blue-300 text-xs leading-relaxed">Students can only find you on the explore page when your profile is 100% complete.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <button 
               onClick={() => setEditing(true)}

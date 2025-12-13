@@ -1,4 +1,14 @@
 import Availability from '../models/availability.model.js';
+
+// Helper to normalize various date inputs to 'YYYY-MM-DD'
+const normalizeDateString = (input) => {
+  if (!input) return '';
+  // If already in YYYY-MM-DD keep as-is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return input;
+  const dateObj = new Date(input);
+  if (Number.isNaN(dateObj.getTime())) return input; // fallback – let original value go through
+  return dateObj.toISOString().substring(0, 10);
+};
 import User from '../models/user.model.js';
 
 // Save or update mentor availability
@@ -7,8 +17,11 @@ export const saveAvailability = async (req, res) => {
     const mentorId = req.user.id;
     const { date, timeSlots, duration } = req.body;
 
+    // Normalize & validate date
+    const formattedDateStr = normalizeDateString(date);
+
     // Validate required fields
-    if (!date || !timeSlots || timeSlots.length === 0) {
+    if (!formattedDateStr || !timeSlots || timeSlots.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Date and time slots are required'
@@ -57,7 +70,7 @@ export const saveAvailability = async (req, res) => {
     // Check if availability already exists for this date
     let availability = await Availability.findOne({
       mentor: mentorId,
-      date: date
+      date: formattedDateStr
     });
 
     if (availability) {
@@ -72,7 +85,7 @@ export const saveAvailability = async (req, res) => {
       // Create new availability
       availability = new Availability({
         mentor: mentorId,
-        date: date,
+        date: formattedDateStr,
         timeSlots: formattedTimeSlots,
         duration: duration || 60,
         isActive: true
@@ -128,6 +141,7 @@ export const getAvailableSlots = async (req, res) => {
   try {
     const { mentorId } = req.params;
     const { date } = req.query;
+    const formattedDateStr = normalizeDateString(date);
 
     // Validate required parameters
     if (!date) {
@@ -140,7 +154,7 @@ export const getAvailableSlots = async (req, res) => {
     // Find availability for the mentor on the specified date
     const availability = await Availability.findOne({
       mentor: mentorId,
-      date: date,
+      date: formattedDateStr,
       isActive: true
     });
 
@@ -308,7 +322,8 @@ export const quickSetupAvailability = async (req, res) => {
     const results = [];
     const errors = [];
 
-    for (const date of dates) {
+    for (let rawDate of dates) {
+      const date = normalizeDateString(rawDate);
       try {
         // Format time slots
         const formattedTimeSlots = timeSlots.map(slot => {

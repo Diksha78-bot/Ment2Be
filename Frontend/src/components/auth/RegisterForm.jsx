@@ -4,9 +4,24 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    countryCode: '+1',
+    phoneNumber: '',
     password: '',
     confirmPassword: ''
   });
+
+  const countryCodes = [
+    { code: '+1', country: 'US/CA', flag: '🇺🇸', format: '(555) 123-4567' },
+    { code: '+91', country: 'India', flag: '🇮🇳', format: '98765 43210' },
+    { code: '+44', country: 'UK', flag: '🇬🇧', format: '7400 123456' },
+    { code: '+61', country: 'Australia', flag: '🇦🇺', format: '412 345 678' },
+    { code: '+86', country: 'China', flag: '🇨🇳', format: '138 0013 8000' },
+    { code: '+81', country: 'Japan', flag: '🇯🇵', format: '90 1234 5678' },
+    { code: '+49', country: 'Germany', flag: '🇩🇪', format: '151 23456789' },
+    { code: '+33', country: 'France', flag: '🇫🇷', format: '6 12 34 56 78' },
+    { code: '+971', country: 'UAE', flag: '🇦🇪', format: '50 123 4567' },
+    { code: '+65', country: 'Singapore', flag: '🇸🇬', format: '8123 4567' },
+  ];
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -24,7 +39,9 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
       alert("Passwords don't match!");
       return;
     }
-    onSubmit({ ...formData, role });
+    // Combine country code and phone number
+    const fullPhoneNumber = formData.countryCode + formData.phoneNumber;
+    onSubmit({ ...formData, phoneNumber: fullPhoneNumber, role });
   };
 
   return (
@@ -40,11 +57,11 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
         Back
       </button>
 
-      <h1 className="text-3xl font-bold text-white mb-2">
+      <h1 className="text-2xl font-bold text-white mb-2">
         Join as a {role}
       </h1>
       
-      <p className="text-gray-400 mb-8">
+      <p className="text-gray-400 mb-6">
         Already have an account?{" "}
         <button 
           type="button"
@@ -55,7 +72,7 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
         </button>
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="text-sm text-gray-300 block mb-2">Full Name</label>
           <div className="relative">
@@ -70,7 +87,7 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full pl-10 pr-3 py-3 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+              className="w-full pl-10 pr-3 py-2.5 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
               placeholder="Enter your full name"
             />
           </div>
@@ -90,8 +107,35 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full pl-10 pr-3 py-3 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+              className="w-full pl-10 pr-3 py-2.5 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
               placeholder="Enter your email"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm text-gray-300 block mb-2">Phone Number</label>
+          <div className="flex gap-2">
+            <select
+              name="countryCode"
+              value={formData.countryCode}
+              onChange={handleChange}
+              className="w-28 px-2 py-2.5 bg-gray-800 border border-gray-700 rounded text-white focus:border-blue-500 focus:outline-none text-sm"
+            >
+              {countryCodes.map((country) => (
+                <option key={country.code} value={country.code}>
+                  {country.flag} {country.code}
+                </option>
+              ))}
+            </select>
+            <input
+              name="phoneNumber"
+              type="tel"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+              required
+              className="flex-1 px-3 py-2.5 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+              placeholder={countryCodes.find(c => c.code === formData.countryCode)?.format || '(555) 123-4567'}
             />
           </div>
         </div>
@@ -111,7 +155,7 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
               onChange={handleChange}
               required
               minLength="6"
-              className="w-full pl-10 pr-12 py-3 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+              className="w-full pl-10 pr-12 py-2.5 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
               placeholder="Enter your password"
             />
             <button
@@ -147,7 +191,7 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
-              className="w-full pl-10 pr-12 py-3 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+              className="w-full pl-10 pr-12 py-2.5 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
               placeholder="Confirm your password"
             />
             <button
@@ -172,7 +216,7 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
         <button
           type="submit"
           disabled={isLoading}
-          className={`w-full py-3 rounded font-semibold transition-colors ${
+          className={`w-full py-2.5 rounded font-semibold transition-colors ${
             isLoading 
               ? 'bg-gray-500 cursor-not-allowed' 
               : 'bg-gray-600 hover:bg-gray-700'

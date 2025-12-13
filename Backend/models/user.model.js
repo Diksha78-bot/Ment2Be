@@ -19,6 +19,7 @@ const UserSchema = new mongoose.Schema(
       portfolio: { type: String, default: '' }
     },
     profilePicture: { type: String, default: '' },
+    phoneNumber: { type: String, required: false },
     isProfileComplete: { type: Boolean, default: false },
     karmaPoints: { type: Number, default: 0 }
   },

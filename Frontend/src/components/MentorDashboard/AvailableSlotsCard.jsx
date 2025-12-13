@@ -34,7 +34,7 @@ const DaySection = ({ group }) => {
           <div className="h-1.5 w-1.5 rounded-full bg-[#4d7cc7]" />
           <h3 className="font-medium text-white">{group.day}</h3>
         </div>
-        <span className="rounded-full bg-[#1e3a70] px-2.5 py-0.5 text-xs font-medium text-white">
+        <span className="rounded-full px-2.5 py-0.5 text-xs font-medium text-white" style={{ backgroundColor: '#da8c18' }}>
           {group.availableCount} Available
         </span>
       </div>
@@ -215,7 +215,7 @@ export const AvailableSlotsCard = ({ className, data, onEdit, onSave }) => {
   return (
     <div className={`overflow-hidden border border-gray-700/50 rounded-lg bg-[#121212] ${className || ''}`}>
       <div className="border-b border-gray-700/50 bg-[#121212] p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <FiCalendar className="h-5 w-5 text-[#4d7cc7]" />
             <div>
@@ -225,11 +225,21 @@ export const AvailableSlotsCard = ({ className, data, onEdit, onSave }) => {
           </div>
           <button 
             onClick={() => setIsEditing(true)}
-            className="rounded-full bg-[#4d7cc7] px-3 py-1 text-xs font-semibold text-white flex items-center gap-1 hover:bg-[#3a67b1] transition-colors"
+            className="rounded-full bg-[#2a2d32] px-3 py-1 text-xs font-semibold text-white flex items-center gap-1 hover:bg-[#3a3d42] transition-colors"
           >
             <FiEdit className="h-3 w-3" />
             Edit
           </button>
+        </div>
+
+        {/* Availability Status Badges */}
+        <div className="flex items-center gap-2">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: '#da8c18' }}>
+            1 available
+          </span>
+          <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: '#da8c18' }}>
+            1 unavailable
+          </span>
         </div>
       </div>
 
