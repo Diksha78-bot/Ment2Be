@@ -3,9 +3,9 @@ import React from 'react';
 const ProfileNavigation = ({ activeTab = 'overview', onTabChange }) => {
   const tabs = [
     { id: 'overview', label: 'Overview', count: null },
-    { id: 'reviews', label: 'Reviews', count: 2 },
-    { id: 'achievements', label: 'Achievements', count: 23 },
-    { id: 'sessions', label: 'Group sessions', count: 1 },
+    { id: 'reviews', label: 'Reviews', count: null },
+    { id: 'videos', label: 'Videos', count: null },
+    { id: 'sessions', label: 'Group sessions', count: null },
   ];
 
   return (

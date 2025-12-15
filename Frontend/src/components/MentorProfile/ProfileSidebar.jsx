@@ -1,7 +1,60 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiStar, FiUsers, FiClock, FiTrendingUp, FiCalendar } from 'react-icons/fi';
 
-const ProfileSidebar = ({ mentorData, onBookSession }) => {
+const ProfileSidebar = ({ mentorData, onBookSession, mentorId }) => {
+  const [stats, setStats] = useState({
+    sessionsCompleted: 0,
+    totalMentoringTime: '0 mins',
+    karmaPoints: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMentorStats = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+        if (!token || !mentorId) {
+          setLoading(false);
+          return;
+        }
+
+        // Fetch mentor stats from backend (includes actual mentoring time calculation)
+        const statsResponse = await fetch(`http://localhost:4000/api/bookings/mentor/stats?mentorId=${mentorId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const statsData = await statsResponse.json();
+        
+        if (statsResponse.ok && statsData.success) {
+          console.log('📊 [ProfileSidebar] Backend stats:', statsData.data);
+
+          setStats({
+            sessionsCompleted: statsData.data.sessionsCompleted,
+            totalMentoringTime: statsData.data.totalMentoringTime,
+            karmaPoints: statsData.data.karmaPoints || 0
+          });
+
+          console.log('✅ [ProfileSidebar] Stats updated:', {
+            sessionsCompleted: statsData.data.sessionsCompleted,
+            totalMentoringTime: statsData.data.totalMentoringTime,
+            karmaPoints: statsData.data.karmaPoints
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching mentor stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMentorStats();
+  }, [mentorId]);
+
   return (
     <div className="space-y-6">
       {/* Achievements/Stats Card */}
@@ -13,7 +66,7 @@ const ProfileSidebar = ({ mentorData, onBookSession }) => {
           <div className="flex items-center">
             <FiStar className="h-5 w-5 text-yellow-400 mr-3" />
             <div>
-              <div className="font-semibold text-white">{mentorData.rating}/5.0</div>
+              <div className="font-semibold text-white">{mentorData.rating.toFixed(1)}/5.0</div>
               <div className="text-sm text-gray-400">Rating ({mentorData.reviews} reviews)</div>
             </div>
           </div>
@@ -22,7 +75,7 @@ const ProfileSidebar = ({ mentorData, onBookSession }) => {
           <div className="flex items-center">
             <FiUsers className="h-5 w-5 text-blue-400 mr-3" />
             <div>
-              <div className="font-semibold text-white">{mentorData.stats.sessionsCompleted}</div>
+              <div className="font-semibold text-white">{loading ? '...' : stats.sessionsCompleted}</div>
               <div className="text-sm text-gray-400">Sessions completed</div>
             </div>
           </div>
@@ -31,7 +84,7 @@ const ProfileSidebar = ({ mentorData, onBookSession }) => {
           <div className="flex items-center">
             <FiClock className="h-5 w-5 text-green-400 mr-3" />
             <div>
-              <div className="font-semibold text-white">{mentorData.stats.totalMentoringTime}</div>
+              <div className="font-semibold text-white">{loading ? '...' : stats.totalMentoringTime}</div>
               <div className="text-sm text-gray-400">Total mentoring time</div>
             </div>
           </div>
@@ -40,7 +93,7 @@ const ProfileSidebar = ({ mentorData, onBookSession }) => {
           <div className="flex items-center">
             <FiTrendingUp className="h-5 w-5 text-purple-400 mr-3" />
             <div>
-              <div className="font-semibold text-white">{mentorData.stats.karmaPoints}</div>
+              <div className="font-semibold text-white">{loading ? '...' : stats.karmaPoints}</div>
               <div className="text-sm text-gray-400">Karma Points</div>
             </div>
           </div>

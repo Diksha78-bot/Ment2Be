@@ -5,6 +5,7 @@ import Session from "../models/Session.model.js";
 import Review from "../models/review.model.js";
 import MentorProfile from "../models/mentorProfile.model.js";
 import axios from 'axios';
+import { getMentorRatingsMap } from '../services/mentorRatingService.js';
 
 export async function CreateOrUpdateMentorProfile(req, res) {
   try {
@@ -147,22 +148,18 @@ export async function GetAllMentors(req, res) {
         match: { role: 'mentor' }
       });
 
-    const mentors = await Promise.all(
-      profiles.filter(profile => profile.user !== null).map(async (profile) => {
+    const mentorIds = profiles
+      .filter(profile => profile.user !== null)
+      .map(profile => profile.user?._id);
+
+    // Get all ratings in one call
+    const ratingsByMentorId = await getMentorRatingsMap(mentorIds);
+
+    const mentors = profiles
+      .filter(profile => profile.user !== null)
+      .map((profile) => {
         const mentorId = profile.user?._id;
-
-        const sessions = await Session.find({ mentor: mentorId, status: 'completed' }).select('_id');
-        const sessionIds = sessions.map((s) => s._id);
-
-        let averageRating = 0;
-        let totalReviews = 0;
-
-        if (sessionIds.length) {
-          const reviews = await Review.find({ session: { $in: sessionIds } }).select('rating');
-          totalReviews = reviews.length;
-          const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
-          averageRating = totalReviews ? Number((totalRating / totalReviews).toFixed(2)) : 0;
-        }
+        const mentorRating = ratingsByMentorId.get(String(mentorId)) || { averageRating: 0, totalReviews: 0 };
 
         return {
           _id: mentorId,
@@ -178,12 +175,11 @@ export async function GetAllMentors(req, res) {
           profilePicture: profile.profilePicture || null,
           isOnline: false,
           skills: profile.skills,
-          averageRating,
-          totalReviews,
+          averageRating: mentorRating.averageRating,
+          totalReviews: mentorRating.totalReviews,
           mentorProfile: profile,
         };
-      })
-    );
+      });
 
     if (sortBy === 'rating') {
       mentors.sort((a, b) => b.averageRating - a.averageRating);
@@ -218,36 +214,18 @@ export async function GetTopExperts(req, res) {
         match: { role: 'mentor' }
       });
 
-    const mentors = await Promise.all(
-      profiles.map(async (profile) => {
+    const mentorIds = profiles
+      .filter(profile => profile.user !== null)
+      .map(profile => profile.user?._id);
+
+    // Get all ratings in one call
+    const ratingsByMentorId = await getMentorRatingsMap(mentorIds);
+
+    const mentors = profiles
+      .filter(profile => profile.user !== null)
+      .map((profile) => {
         const mentorId = profile.user?._id;
-
-        // Get completed sessions count
-        const completedSessions = await Session.find({ 
-          mentor: mentorId, 
-          status: 'completed' 
-        }).countDocuments();
-
-        // Get unique mentees (students) count
-        const uniqueMentees = await Session.find({ 
-          mentor: mentorId, 
-          status: 'completed' 
-        }).distinct('student');
-        const totalMentees = uniqueMentees.length;
-
-        // Get average rating
-        const sessions = await Session.find({ mentor: mentorId, status: 'completed' }).select('_id');
-        const sessionIds = sessions.map((s) => s._id);
-
-        let averageRating = 0;
-        let totalReviews = 0;
-
-        if (sessionIds.length) {
-          const reviews = await Review.find({ session: { $in: sessionIds } }).select('rating');
-          totalReviews = reviews.length;
-          const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
-          averageRating = totalReviews ? Number((totalRating / totalReviews).toFixed(2)) : 0;
-        }
+        const mentorRating = ratingsByMentorId.get(String(mentorId)) || { averageRating: 0, totalReviews: 0 };
 
         return {
           _id: mentorId,
@@ -263,24 +241,18 @@ export async function GetTopExperts(req, res) {
           profilePicture: profile.profilePicture || null,
           skills: profile.skills,
           karmaPoints: profile.user?.karmaPoints || 0,
-          totalSessions: completedSessions,
-          totalMentees,
-          averageRating,
-          totalReviews,
+          averageRating: mentorRating.averageRating,
+          totalReviews: mentorRating.totalReviews,
           isOnline: false,
         };
-      })
-    );
+      });
 
-    // Sort by: karma points (primary), total sessions (secondary), total mentees (tertiary)
+    // Sort by: karma points (primary), average rating (secondary)
     mentors.sort((a, b) => {
       if (b.karmaPoints !== a.karmaPoints) {
         return b.karmaPoints - a.karmaPoints;
       }
-      if (b.totalSessions !== a.totalSessions) {
-        return b.totalSessions - a.totalSessions;
-      }
-      return b.totalMentees - a.totalMentees;
+      return b.averageRating - a.averageRating;
     });
 
     res.status(200).json({

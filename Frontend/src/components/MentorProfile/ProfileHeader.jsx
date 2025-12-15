@@ -1,7 +1,189 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiMapPin, FiLinkedin, FiGithub, FiEdit, FiStar, FiAward, FiClock, FiUsers } from 'react-icons/fi';
 
-const ProfileHeader = ({ mentorData, isOwnProfile = false }) => {
+const ProfileHeader = ({ mentorData, isOwnProfile = false, mentorId }) => {
+  const [mentorStats, setMentorStats] = useState({
+    mentoredStudents: 0,
+    totalSessions: 0,
+    rating: 0,
+    reviewCount: 0
+  });
+  const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  useEffect(() => {
+    const fetchMentorStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token || !mentorId) return;
+
+        console.log('🔍 [ProfileHeader] Fetching stats for mentor:', mentorId);
+
+        // Fetch mentor stats using the correct endpoint
+        const statsResponse = await fetch(`http://localhost:4000/api/bookings/mentor/stats?mentorId=${mentorId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const statsData = await statsResponse.json();
+        
+        let mentoredStudents = 0;
+        let completedSessions = 0;
+
+        if (statsResponse.ok && statsData.success && statsData.data) {
+          mentoredStudents = statsData.data.sessionsCompleted || 0;
+          completedSessions = statsData.data.sessionsCompleted || 0;
+          console.log('✅ [ProfileHeader] Stats from backend:', { mentoredStudents, completedSessions });
+        }
+
+        // Fetch reviews for this mentor to calculate rating
+        const reviewsResponse = await fetch(`http://localhost:4000/api/reviews?mentorId=${mentorId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const reviewsData = await reviewsResponse.json();
+        
+        let averageRating = 0;
+        let reviewCount = 0;
+
+        if (reviewsResponse.ok && reviewsData.success && reviewsData.reviews) {
+          // Filter reviews with ratings
+          const ratedReviews = reviewsData.reviews.filter(review => review.rating);
+          reviewCount = ratedReviews.length;
+          
+          if (reviewCount > 0) {
+            const totalRating = ratedReviews.reduce((sum, review) => sum + review.rating, 0);
+            averageRating = (totalRating / reviewCount).toFixed(1);
+          }
+          console.log('⭐ [ProfileHeader] Reviews:', { reviewCount, averageRating });
+        }
+
+        setMentorStats({
+          mentoredStudents,
+          totalSessions: completedSessions,
+          rating: parseFloat(averageRating),
+          reviewCount
+        });
+
+        console.log('📊 [ProfileHeader] Final mentor stats:', { mentoredStudents, completedSessions, averageRating, reviewCount });
+      } catch (err) {
+        console.error('Error fetching mentor stats:', err);
+      }
+    };
+
+    fetchMentorStats();
+  }, [mentorId]);
+
+  // Check if already connected
+  useEffect(() => {
+    const checkConnectionStatus = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token || !mentorId) return;
+
+        const response = await fetch(`http://localhost:4000/api/connections/check?mentorId=${mentorId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+          setIsConnected(data.isConnected);
+          console.log('🔗 [ProfileHeader] Connection status:', data.isConnected);
+        }
+      } catch (err) {
+        console.error('Error checking connection status:', err);
+      }
+    };
+
+    checkConnectionStatus();
+  }, [mentorId]);
+
+  const handleConnect = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token || !mentorId) {
+        console.error('Missing token or mentorId');
+        return;
+      }
+
+      setIsConnecting(true);
+      console.log('🔗 [ProfileHeader] Connecting to mentor:', mentorId);
+
+      const response = await fetch('http://localhost:4000/api/connections/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ mentorId })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log('✅ [ProfileHeader] Successfully connected to mentor');
+        setIsConnected(true);
+        alert('Successfully connected to mentor!');
+      } else {
+        console.error('❌ [ProfileHeader] Connection failed:', data.message);
+        alert(data.message || 'Failed to connect to mentor');
+      }
+    } catch (err) {
+      console.error('Error connecting to mentor:', err);
+      alert('Error connecting to mentor');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token || !mentorId) {
+        console.error('Missing token or mentorId');
+        return;
+      }
+
+      setIsConnecting(true);
+      console.log('🔗 [ProfileHeader] Disconnecting from mentor:', mentorId);
+
+      const response = await fetch('http://localhost:4000/api/connections/disconnect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ mentorId })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log('✅ [ProfileHeader] Successfully disconnected from mentor');
+        setIsConnected(false);
+        alert('Successfully disconnected from mentor');
+      } else {
+        console.error('❌ [ProfileHeader] Disconnection failed:', data.message);
+        alert(data.message || 'Failed to disconnect from mentor');
+      }
+    } catch (err) {
+      console.error('Error disconnecting from mentor:', err);
+      alert('Error disconnecting from mentor');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
   return (
     <div className="bg-[#1f1f1f] border border-[#333] rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
       <div className="p-6">
@@ -49,8 +231,8 @@ const ProfileHeader = ({ mentorData, isOwnProfile = false }) => {
                   <div className="flex items-center">
                     <div className="flex items-center bg-[#2d2d2d] px-3 py-1 rounded-full">
                       <FiStar className="h-4 w-4 text-yellow-400 mr-1" />
-                      <span className="text-white font-medium">{mentorData.rating?.toFixed(1) || '5.0'}</span>
-                      <span className="text-gray-400 text-sm ml-1">({mentorData.reviews || 0} reviews)</span>
+                      <span className="text-white font-medium">{mentorStats.rating || '0.0'}</span>
+                      <span className="text-gray-400 text-sm ml-1">({mentorStats.reviewCount} reviews)</span>
                     </div>
                   </div>
                 </div>
@@ -66,11 +248,11 @@ const ProfileHeader = ({ mentorData, isOwnProfile = false }) => {
                 <div className="flex flex-wrap items-center gap-4 mt-4 text-sm">
                   <div className="flex items-center text-gray-300">
                     <FiUsers className="h-4 w-4 mr-1.5 text-gray-400" />
-                    <span>Mentored {mentorData.stats?.mentoredStudents || '100+'}+ students</span>
+                    <span>Mentored {mentorStats.mentoredStudents || 0} students</span>
                   </div>
                   <div className="flex items-center text-gray-300">
                     <FiClock className="h-4 w-4 mr-1.5 text-green-400" />
-                    <span>{mentorData.stats?.totalSessions || '200+'}+ sessions</span>
+                    <span>{mentorStats.totalSessions || 0} sessions</span>
                   </div>
                   {mentorData.stats?.isTopMentor && (
                     <div className="flex items-center text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded-full">
@@ -143,9 +325,21 @@ const ProfileHeader = ({ mentorData, isOwnProfile = false }) => {
                     <FiEdit className="h-4 w-4 mr-2" />
                     Edit profile
                   </button>
+                ) : isConnected ? (
+                  <button 
+                    onClick={handleDisconnect}
+                    disabled={isConnecting}
+                    className="inline-flex justify-center items-center px-4 py-2 border border-[#444] rounded-md text-sm font-medium text-white bg-[#2d2d2d] hover:bg-[#3d3d3d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isConnecting ? 'Disconnecting...' : 'Disconnect'}
+                  </button>
                 ) : (
-                  <button className="inline-flex justify-center items-center px-4 py-2 border border-[#444] rounded-md text-sm font-medium text-white bg-[#2d2d2d] hover:bg-[#3d3d3d] transition-colors">
-                    Follow
+                  <button 
+                    onClick={handleConnect}
+                    disabled={isConnecting}
+                    className="inline-flex justify-center items-center px-4 py-2 border border-[#444] rounded-md text-sm font-medium text-white bg-[#2d2d2d] hover:bg-[#3d3d3d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isConnecting ? 'Connecting...' : 'Connect'}
                   </button>
                 )}
               </div>

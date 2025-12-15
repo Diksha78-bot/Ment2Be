@@ -1,7 +1,9 @@
 import Booking from '../models/booking.model.js';
 import User from '../models/user.model.js';
+import Connection from '../models/connection.model.js';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
+import { getMentorRatingsMap } from '../services/mentorRatingService.js';
 
 // Create a new booking
 const createBooking = async (req, res) => {
@@ -98,6 +100,35 @@ const createBooking = async (req, res) => {
     const booking = new Booking(bookingData);
     await booking.save();
 
+    // Automatically connect student with mentor when booking is created
+    try {
+      const existingConnection = await Connection.findOne({
+        student: studentId,
+        mentor: mentorId
+      });
+
+      if (!existingConnection) {
+        const connection = new Connection({
+          student: studentId,
+          mentor: mentorId,
+          status: 'connected',
+          connectedAt: new Date()
+        });
+        await connection.save();
+        console.log(`✅ [createBooking] Auto-connected student ${studentId} with mentor ${mentorId}`);
+
+        // Increment mentor's connection count
+        await User.findByIdAndUpdate(
+          mentorId,
+          { $inc: { connectionsCount: 1 } },
+          { new: true }
+        );
+      }
+    } catch (connError) {
+      console.error('⚠️ [createBooking] Error creating connection:', connError);
+      // Don't fail the booking if connection creation fails
+    }
+
     // Populate the booking with user details
     await booking.populate([
       { path: 'student', select: 'name email profilePicture' },
@@ -154,19 +185,51 @@ const getUserBookings = async (req, res) => {
 
     const bookings = await Booking.find(query)
       .populate('student', 'name email profilePicture')
-      .populate({
-        path: 'mentor',
-        select: 'name email profilePicture headline mentorProfile',
-        populate: {
-          path: 'mentorProfile',
-          select: 'profilePicture headline',
-          options: { strictPopulate: false }
-        },
-        options: { strictPopulate: false }
-      })
+      .populate('mentor', 'name email profilePicture headline company averageRating totalReviews')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
+
+    const mentorIds = bookings
+      .map((b) => b.mentor?._id)
+      .filter(Boolean);
+
+    console.log(`📚 getUserBookings - Mentor IDs to fetch ratings for:`, mentorIds.map(id => String(id)));
+
+    const ratingsByMentorId = await getMentorRatingsMap(mentorIds);
+    
+    console.log(`📚 getUserBookings - Ratings map returned:`, Array.from(ratingsByMentorId.entries()));
+
+    // Fetch mentor profile pictures from MentorProfile model for those without profile pictures
+    const MentorProfile = (await import('../models/mentorProfile.model.js')).default;
+    
+    const bookingsWithRatings = await Promise.all(
+      bookings.map(async (booking) => {
+        const obj = booking.toObject({ virtuals: true });
+        const mentorId = obj.mentor?._id ? String(obj.mentor._id) : null;
+        const mentorRating = mentorId ? ratingsByMentorId.get(mentorId) : null;
+        console.log(`📚 Enriching booking - Mentor: ${mentorId}, Rating found:`, mentorRating);
+        
+        if (obj.mentor) {
+          obj.mentor.averageRating = mentorRating?.averageRating ?? 0;
+          obj.mentor.totalReviews = mentorRating?.totalReviews ?? 0;
+          
+          // If mentor doesn't have a profile picture, fetch from MentorProfile
+          if (!obj.mentor.profilePicture || obj.mentor.profilePicture === '') {
+            try {
+              const mentorProfile = await MentorProfile.findOne({ user: obj.mentor._id }).select('profilePicture');
+              if (mentorProfile && mentorProfile.profilePicture) {
+                obj.mentor.profilePicture = mentorProfile.profilePicture;
+                console.log(`📚 Fetched profile picture from MentorProfile for mentor ${mentorId}`);
+              }
+            } catch (err) {
+              console.error(`⚠️ Error fetching MentorProfile for ${mentorId}:`, err);
+            }
+          }
+        }
+        return obj;
+      })
+    );
 
     const total = await Booking.countDocuments(query);
 
@@ -175,9 +238,18 @@ const getUserBookings = async (req, res) => {
       console.log(`  📖 Booking ID: ${booking._id}, Student: ${booking.student?._id}, Mentor: ${booking.mentor?._id}, RoomID: ${booking.roomId || 'No room ID'}`);
     });
 
+    // Debug: Log first booking with ratings
+    if (bookingsWithRatings.length > 0) {
+      console.log(`📚 Sample enriched booking mentor:`, {
+        name: bookingsWithRatings[0].mentor?.name,
+        averageRating: bookingsWithRatings[0].mentor?.averageRating,
+        totalReviews: bookingsWithRatings[0].mentor?.totalReviews
+      });
+    }
+
     res.status(200).json({
       success: true,
-      bookings,
+      bookings: bookingsWithRatings,
       pagination: {
         current: parseInt(page),
         total: Math.ceil(total / limit),
@@ -749,6 +821,200 @@ const updateMeetingStatus = async (req, res) => {
   }
 };
 
+// Get completed sessions grouped by date for contribution graph
+const getCompletedSessionsByDate = async (req, res) => {
+  try {
+    // Accept mentorId from query params, fallback to authenticated user
+    const { mentorId: queryMentorId, year } = req.query;
+    const mentorId = queryMentorId || req.user.id;
+    const selectedYear = year ? parseInt(year) : new Date().getFullYear();
+
+    console.log('🔍 [getCompletedSessionsByDate] Starting...');
+    console.log('👤 [getCompletedSessionsByDate] Mentor ID:', mentorId);
+    console.log('📅 [getCompletedSessionsByDate] Selected year:', selectedYear);
+
+    // Get all completed sessions for the mentor in the selected year
+    const startDate = new Date(selectedYear, 0, 1);
+    const endDate = new Date(selectedYear, 11, 31, 23, 59, 59);
+
+    console.log('📆 [getCompletedSessionsByDate] Date range:', startDate, 'to', endDate);
+
+    // First, let's check ALL bookings for this mentor to debug
+    const allBookings = await Booking.find({ mentor: mentorId }).select('status sessionDate');
+    console.log('🔎 [getCompletedSessionsByDate] ALL bookings for mentor:', allBookings.length);
+    console.log('📋 [getCompletedSessionsByDate] All booking statuses:', allBookings.map(b => ({ status: b.status, date: b.sessionDate })));
+
+    // Auto-mark past sessions as completed if they have sessionStartTime and sessionEndTime
+    const now = new Date();
+    const pastPendingSessions = await Booking.find({
+      mentor: mentorId,
+      status: { $in: ['pending', 'confirmed'] },
+      sessionDate: { $lt: now },
+      sessionStartTime: { $exists: true },
+      sessionEndTime: { $exists: true }
+    });
+
+    console.log('⏰ [getCompletedSessionsByDate] Past sessions with start/end times:', pastPendingSessions.length);
+    
+    // Mark them as completed
+    for (let session of pastPendingSessions) {
+      session.status = 'completed';
+      session.sessionCompleted = true;
+      await session.save();
+      console.log('✔️ [getCompletedSessionsByDate] Marked session as completed:', session._id);
+    }
+
+    // Now fetch completed sessions
+    const completedSessions = await Booking.find({
+      mentor: mentorId,
+      status: 'completed',
+      sessionDate: {
+        $gte: startDate,
+        $lte: endDate
+      }
+    }).select('sessionDate sessionEndTime duration');
+
+    console.log('📊 [getCompletedSessionsByDate] Found COMPLETED sessions in year range:', completedSessions.length);
+    console.log('📋 [getCompletedSessionsByDate] Sessions data:', completedSessions);
+
+    // Group sessions by date
+    const sessionsByDate = {};
+    completedSessions.forEach(session => {
+      const dateKey = new Date(session.sessionDate).toISOString().split('T')[0];
+      if (!sessionsByDate[dateKey]) {
+        sessionsByDate[dateKey] = {
+          date: dateKey,
+          count: 0,
+          totalDuration: 0,
+          sessions: []
+        };
+      }
+      sessionsByDate[dateKey].count += 1;
+      sessionsByDate[dateKey].totalDuration += session.duration || 0;
+      sessionsByDate[dateKey].sessions.push({
+        _id: session._id,
+        sessionDate: session.sessionDate,
+        duration: session.duration
+      });
+    });
+
+    console.log('✅ [getCompletedSessionsByDate] Grouped sessions:', sessionsByDate);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        year: selectedYear,
+        totalCompletedSessions: completedSessions.length,
+        sessionsByDate: sessionsByDate,
+        dates: Object.values(sessionsByDate)
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [getCompletedSessionsByDate] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch completed sessions',
+      error: error.message
+    });
+  }
+};
+
+// Get mentor statistics including actual mentoring time
+const getMentorStats = async (req, res) => {
+  try {
+    const { mentorId } = req.query;
+    
+    // If mentorId is provided in query, use it. Otherwise use authenticated user's ID
+    const targetMentorId = mentorId || req.user.id;
+
+    console.log('📊 [getMentorStats] Fetching stats for mentor:', targetMentorId, 'Query mentorId:', mentorId, 'Auth user:', req.user.id);
+
+    // Get mentor user data including karma points
+    const mentorUser = await User.findById(targetMentorId).select('karmaPoints');
+    const karmaPoints = mentorUser?.karmaPoints || 0;
+    console.log('🏆 [getMentorStats] Karma points:', karmaPoints);
+
+    // Get all completed sessions for this mentor
+    const completedSessions = await Booking.find({
+      mentor: targetMentorId,
+      status: 'completed'
+    }).select('sessionStartTime sessionEndTime actualDuration duration sessionDate');
+
+    console.log('✅ [getMentorStats] Found completed sessions:', completedSessions.length);
+
+    // Calculate actual mentoring time
+    let totalMinutes = 0;
+    const sessionDetails = [];
+
+    completedSessions.forEach(session => {
+      let durationMinutes = 0;
+      let isValidSession = false;
+
+      // Only count sessions with actual start/end times (new sessions tracked properly)
+      // Ignore old sessions that were just marked completed without proper time tracking
+      if (session.sessionStartTime && session.sessionEndTime) {
+        const startTime = new Date(session.sessionStartTime);
+        const endTime = new Date(session.sessionEndTime);
+        const durationMs = endTime - startTime;
+        durationMinutes = Math.floor(durationMs / (1000 * 60));
+        isValidSession = true;
+        console.log(`✅ [getMentorStats] Session ${session._id}: Actual time tracked=${durationMinutes}m`);
+      } else {
+        // Skip sessions without proper time tracking (old sessions)
+        console.log(`⏭️ [getMentorStats] Session ${session._id}: Skipped (no actual time tracking)`);
+      }
+
+      // Only add to total if it has actual time tracking
+      if (isValidSession) {
+        totalMinutes += durationMinutes;
+        sessionDetails.push({
+          _id: session._id,
+          date: session.sessionDate,
+          actualDuration: durationMinutes,
+          scheduledDuration: session.duration,
+          hasActualTimes: true
+        });
+      }
+    });
+
+    // Format total time
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    let timeString = '';
+    if (hours > 0) {
+      timeString = `${hours}h ${mins}m`;
+    } else {
+      timeString = `${mins} mins`;
+    }
+
+    console.log('📈 [getMentorStats] Total mentoring time:', timeString);
+    console.log('📋 [getMentorStats] Session details:', sessionDetails);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        mentorId: targetMentorId,
+        sessionsCompleted: completedSessions.length,
+        totalMinutes: totalMinutes,
+        totalMentoringTime: timeString,
+        hours: hours,
+        minutes: mins,
+        karmaPoints: karmaPoints,
+        sessionDetails: sessionDetails
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [getMentorStats] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch mentor statistics',
+      error: error.message
+    });
+  }
+};
+
 export {
   createBooking,
   getUserBookings,
@@ -759,5 +1025,7 @@ export {
   getMentorBookings,
   deleteBooking,
   joinSession,
-  updateMeetingStatus
+  updateMeetingStatus,
+  getCompletedSessionsByDate,
+  getMentorStats
 };

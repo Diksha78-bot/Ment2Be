@@ -9,7 +9,9 @@ import {
   getMentorBookings,
   deleteBooking,
   joinSession,
-  updateMeetingStatus
+  updateMeetingStatus,
+  getCompletedSessionsByDate,
+  getMentorStats
 } from '../controllers/booking.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 
@@ -38,6 +40,18 @@ router.get('/mentor', getMentorBookings);
 // @desc    Get booking statistics for the authenticated user
 // @access  Private
 router.get('/stats', getBookingStats);
+
+// @route   GET /api/bookings/completed-by-date
+// @desc    Get completed sessions grouped by date for contribution graph
+// @access  Private (Mentors only)
+// @query   ?year=2025
+router.get('/completed-by-date', getCompletedSessionsByDate);
+
+// @route   GET /api/bookings/mentor/stats
+// @desc    Get mentor statistics including actual mentoring time
+// @access  Private (Mentors)
+// @query   ?mentorId=optional (if not provided, uses authenticated user)
+router.get('/mentor/stats', getMentorStats);
 
 // @route   GET /api/bookings/:bookingId
 // @desc    Get a specific booking by ID

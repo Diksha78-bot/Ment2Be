@@ -155,7 +155,7 @@ const MentorDetailPage = () => {
         ) : (
           <div className="space-y-6">
             {/* Profile Header */}
-            <ProfileHeader mentorData={mentorData} />
+            <ProfileHeader mentorData={mentorData} mentorId={mentorId} />
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -169,13 +169,14 @@ const MentorDetailPage = () => {
 
                 {/* Contribution Graph - Only show on Overview tab */}
                 {activeTab === 'overview' && (
-                  <ContributionGraph mentorData={mentorData} />
+                  <ContributionGraph mentorData={mentorData} mentorId={mentorId} />
                 )}
 
                 {/* Tab Content */}
                 <ProfileContent 
                   mentorData={mentorData} 
-                  activeTab={activeTab} 
+                  activeTab={activeTab}
+                  mentorId={mentorId}
                 />
               </div>
 
@@ -183,7 +184,8 @@ const MentorDetailPage = () => {
               <div className="lg:col-span-3">
                 <ProfileSidebar 
                   mentorData={mentorData} 
-                  onBookSession={handleBookSession} 
+                  onBookSession={handleBookSession}
+                  mentorId={mentorId}
                 />
               </div>
             </div>

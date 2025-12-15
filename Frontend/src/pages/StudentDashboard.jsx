@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FiCalendar, FiClock, FiUser, FiBookOpen, FiTrendingUp, FiUserPlus, FiLoader, FiX, FiCheck, FiAward, FiLogOut } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiUser, FiBookOpen, FiTrendingUp, FiUserPlus, FiLoader, FiX, FiCheck, FiAward, FiLogOut, FiStar } from 'react-icons/fi';
 import Navbar from '../components/StudentDashboard/Navbar';
 import SessionTimer from '../components/SessionTimer';
 import KarmaPointsCard from '../components/KarmaPointsCard/KarmaPointsCard';
@@ -68,7 +68,13 @@ const MentorCard = ({ mentor, onNavigate }) => {
           <p className="text-white font-medium text-sm truncate">{mentor.name}</p>
           <p className="text-gray-400 text-xs">{mentor.title || 'Mentor'}</p>
         </div>
-        <span className="text-xs bg-gray-600 text-white px-2 py-0.5 rounded-full whitespace-nowrap">{formatLastInteraction(mentor.lastInteraction || mentor.createdAt || mentor.updatedAt)}</span>
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center bg-[#535353] text-white text-xs font-medium px-2 py-0.5 rounded">
+            <FiStar className="text-yellow-400 mr-1" size={12} />
+            {Number(mentor.averageRating || 0).toFixed(1)} ({mentor.totalReviews || 0})
+          </div>
+          <span className="text-xs bg-gray-600 text-white px-2 py-0.5 rounded-full whitespace-nowrap">{formatLastInteraction(mentor.lastInteraction || mentor.createdAt || mentor.updatedAt)}</span>
+        </div>
       </div>
       {!loadingAvail && availability && (
         <div className="flex items-center space-x-2 text-xs">
@@ -98,6 +104,9 @@ const UserDashboard = () => {
   const [tasksLoading, setTasksLoading] = useState(true);
   const [submittedReviews, setSubmittedReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [groupedSubmissions, setGroupedSubmissions] = useState({});
+  const [connectedMentorsCount, setConnectedMentorsCount] = useState(0);
+  const [connectedMentorsLoading, setConnectedMentorsLoading] = useState(true);
 
   // Modal states
   const [rateModalOpen, setRateModalOpen] = useState(false);
@@ -186,6 +195,7 @@ const UserDashboard = () => {
     fetchRecentMessages();
     fetchRecentTasks();
     fetchSubmittedReviews();
+    fetchConnectedMentorsCount();
   }, [navigate]);
 
   const fetchRecentMentors = async () => {
@@ -194,8 +204,8 @@ const UserDashboard = () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      // Fetch mentors from confirmed bookings only
-      const response = await fetch('http://localhost:4000/api/bookings', {
+      // Fetch connected mentors sorted by connection date (most recent first)
+      const response = await fetch('http://localhost:4000/api/connections/my-connections?status=connected', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -203,53 +213,33 @@ const UserDashboard = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch bookings data');
+        throw new Error('Failed to fetch connected mentors');
       }
 
       const data = await response.json();
-      const bookings = Array.isArray(data.bookings) ? data.bookings : [];
-      
-      // Filter only confirmed sessions and extract unique mentors
-      const confirmedBookings = bookings.filter(booking => 
-        booking.status === 'confirmed' || booking.status === 'completed'
-      );
-      
-      // Create a map of unique mentors from confirmed bookings
-      const mentorMap = new Map();
-      confirmedBookings.forEach(booking => {
-        if (booking.mentor && booking.mentor._id) {
-          const mentorId = booking.mentor._id;
-          if (!mentorMap.has(mentorId)) {
-            mentorMap.set(mentorId, {
-              _id: mentorId,
-              name: booking.mentor.name,
-              profilePicture: booking.mentor.profilePicture || booking.mentor.mentorProfile?.profilePicture,
-              title: booking.mentor.mentorProfile?.headline || 'Mentor',
-              lastInteraction: booking.sessionDate || booking.createdAt,
-              hasConfirmedSession: true
-            });
-          } else {
-            // Update lastInteraction if this booking is more recent
-            const existing = mentorMap.get(mentorId);
-            const bookingDate = new Date(booking.sessionDate || booking.createdAt);
-            const existingDate = new Date(existing.lastInteraction);
-            if (bookingDate > existingDate) {
-              existing.lastInteraction = booking.sessionDate || booking.createdAt;
-            }
-          }
-        }
-      });
+      const connections = Array.isArray(data.data) ? data.data : [];
 
-      const uniqueMentors = Array.from(mentorMap.values()).sort((a, b) => {
-        const dateA = new Date(b.lastInteraction || 0);
-        const dateB = new Date(a.lastInteraction || 0);
-        return dateA - dateB;
-      });
+      console.log('✅ [fetchRecentMentors] Connected mentors:', connections);
 
-      console.log('Mentors with confirmed sessions:', uniqueMentors);
-      setMentors(uniqueMentors);
+      // Map connections to mentor format, sorted by connectedAt (most recent first)
+      const recentMentors = connections
+        .sort((a, b) => new Date(b.connectedAt) - new Date(a.connectedAt))
+        .map(conn => ({
+          _id: conn.mentor?._id,
+          name: conn.mentor?.name,
+          profilePicture: conn.mentor?.profilePicture,
+          title: conn.mentor?.headline || 'Mentor',
+          averageRating: conn.mentor?.averageRating || 0,
+          totalReviews: conn.mentor?.totalReviews || 0,
+          lastInteraction: conn.connectedAt,
+          hasConfirmedSession: false
+        }))
+        .filter(mentor => mentor._id); // Filter out any invalid entries
+
+      console.log('✅ [fetchRecentMentors] Recent mentors:', recentMentors);
+      setMentors(recentMentors);
     } catch (error) {
-      console.error('Error fetching recent mentors:', error);
+      console.error('Error fetching mentors:', error);
       setMentors([]);
     } finally {
       setMentorsLoading(false);
@@ -305,6 +295,34 @@ const UserDashboard = () => {
     }
   };
 
+  const fetchConnectedMentorsCount = async () => {
+    try {
+      setConnectedMentorsLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch('http://localhost:4000/api/connections/my-connections?status=connected', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        console.log('✅ [StudentDashboard] Connected mentors count:', data.count);
+        setConnectedMentorsCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error('Error fetching connected mentors count:', err);
+      setConnectedMentorsCount(0);
+    } finally {
+      setConnectedMentorsLoading(false);
+    }
+  };
+
   const fetchUpcomingSessions = async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -323,27 +341,49 @@ const UserDashboard = () => {
       console.log('Bookings API Response:', data);
 
       if (response.ok && data.success && data.bookings) {
-        const upcoming = data.bookings.filter(booking => {
+        // Filter for UPCOMING sessions (not completed, future date)
+        const now = new Date();
+        const upcomingSessions = data.bookings.filter(booking => {
           const sessionDate = new Date(booking.sessionDate);
-          const now = new Date();
-          return sessionDate >= now && ['pending', 'confirmed'].includes(booking.status);
+          return booking.status !== 'completed' && sessionDate >= now;
         }).sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
 
-        console.log('Filtered upcoming bookings:', upcoming);
+        console.log('Filtered upcoming bookings:', upcomingSessions);
 
         // Map booking to session format with mentor data
-        const sessionsWithMentor = upcoming.map(booking => ({
-          _id: booking._id, // Use booking ID as session ID for now
-          sessionId: booking._id,
-          mentorId: booking.mentor || booking.mentorId || {},
-          mentor: booking.mentor || booking.mentorId || {},
-          sessionDate: booking.sessionDate,
-          startTime: booking.sessionDate,
-          status: booking.status
-        }));
+        const sessionsWithMentor = upcomingSessions.map(booking => {
+          // Get mentor data - prefer populated mentor object
+          const mentorData = booking.mentor || booking.mentorId || {};
+          const mentorId = mentorData._id || mentorData.id || booking.mentorId;
+          
+          console.log('Mentor data for session:', {
+            mentorId,
+            mentorName: mentorData.name,
+            profilePicture: mentorData.profilePicture,
+            mentorProfile: mentorData.mentorProfile
+          });
+          
+          return {
+            _id: booking._id,
+            sessionId: booking._id,
+            mentorId: {
+              _id: mentorId,
+              name: mentorData.name || 'Mentor',
+              email: mentorData.email,
+              profilePicture: mentorData.profilePicture || mentorData.mentorProfile?.profilePicture || '',
+              headline: mentorData.headline || mentorData.mentorProfile?.headline || ''
+            },
+            mentor: mentorData,
+            sessionDate: booking.sessionDate,
+            sessionTime: booking.sessionTime,
+            duration: booking.duration,
+            startTime: booking.sessionDate,
+            status: booking.status
+          };
+        });
 
         console.log('Sessions with mentor:', sessionsWithMentor);
-        setUpcomingSessions(sessionsWithMentor.slice(0, 2));
+        setUpcomingSessions(sessionsWithMentor.slice(0, 1)); // Show only next 1 session
       } else {
         console.log('No bookings found or invalid response');
         setUpcomingSessions([]);
@@ -394,14 +434,41 @@ const UserDashboard = () => {
               senderName: conv.participantName || 'Unknown',
               content: conv.lastMessage || 'No message',
               timestamp: conv.lastMessageTime || new Date().toISOString(),
-              participantId: conv.participantId
+              participantId: conv.participantId,
+              profilePicture: conv.participantProfilePicture || ''
             };
           })
           .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
           .slice(0, 2);
 
-        console.log(' Processed messages:', messages); // Debug log
-        setRecentMessages(messages);
+        // Fetch profile pictures for participants who don't have them
+        const enrichedMessages = await Promise.all(
+          messages.map(async (msg) => {
+            if (!msg.profilePicture && msg.participantId) {
+              try {
+                const mentorResponse = await fetch(`http://localhost:4000/api/mentors/${msg.participantId}`, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                });
+                
+                if (mentorResponse.ok) {
+                  const mentorData = await mentorResponse.json();
+                  if (mentorData.mentor?.profilePicture) {
+                    msg.profilePicture = mentorData.mentor.profilePicture;
+                  }
+                }
+              } catch (err) {
+                console.error(`Error fetching profile picture for participant ${msg.participantId}:`, err);
+              }
+            }
+            return msg;
+          })
+        );
+
+        console.log(' Processed messages with profile pictures:', enrichedMessages); // Debug log
+        setRecentMessages(enrichedMessages);
       } else {
         console.error(' API Error:', response.status);
         setRecentMessages([]);
@@ -470,18 +537,24 @@ const UserDashboard = () => {
       if (response.ok) {
         const reviewsList = Array.isArray(data.reviews) ? data.reviews : [];
         setSubmittedReviews(reviewsList);
-        console.log('Submitted reviews loaded successfully:', reviewsList.length, 'reviews');
-        reviewsList.forEach((review, idx) => {
-          console.log(`Review ${idx}:`, {
-            id: review._id,
-            rating: review.rating,
-            hasReview: !!review.review,
-            createdAt: review.createdAt
-          });
+        
+        // Group submissions by mentor name
+        const grouped = {};
+        reviewsList.forEach(review => {
+          const mentorName = review.mentorId?.name || review.mentor?.name || 'Unknown Mentor';
+          if (!grouped[mentorName]) {
+            grouped[mentorName] = [];
+          }
+          grouped[mentorName].push(review);
         });
+        setGroupedSubmissions(grouped);
+        
+        console.log('Submitted reviews loaded successfully:', reviewsList.length, 'reviews');
+        console.log('Grouped submissions:', grouped);
       } else {
         console.log('API error:', data.message);
         setSubmittedReviews([]);
+        setGroupedSubmissions({});
       }
     } catch (err) {
       console.error('Error fetching submitted reviews:', err);
@@ -692,6 +765,7 @@ const UserDashboard = () => {
                     </div>
                   )}
                 </div>
+
               </div>
 
               <div className="space-y-1">
@@ -700,10 +774,14 @@ const UserDashboard = () => {
               </div>
 
               <div className="w-full space-y-1.5 mt-4 border-t border-gray-600 pt-3">
-                <div className="flex items-center space-x-2 px-3 py-1.5 text-gray-300 text-sm">
+
+                <button
+                  onClick={() => navigate('/student/mentors')}
+                  className="w-full flex items-center space-x-2 px-3 py-1.5 text-gray-300 text-sm hover:bg-[#202327] rounded-lg transition-colors text-left"
+                >
                   <FiUser className="w-4 h-4 text-blue-400" />
-                  <span>Mentors</span>
-                </div>
+                  <span>Mentors: {connectedMentorsLoading ? '...' : connectedMentorsCount}</span>
+                </button>
 
                 <div className="flex items-center space-x-2 px-3 py-1.5 text-gray-300 text-sm">
                   <FiAward className="w-4 h-4 text-purple-400" />
@@ -991,8 +1069,12 @@ const UserDashboard = () => {
                     <div className="space-y-3">
                       {recentMessages.map((msg) => (
                         <div key={msg._id || msg.participantId} className="flex items-start space-x-3 p-3 bg-[#202327] rounded-lg hover:bg-[#2a2d32] transition-colors cursor-pointer" onClick={() => navigate('/student/chat')}>
-                          <div className="h-9 w-9 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                            {getInitials(msg.senderName || 'Unknown')}
+                          <div className="h-9 w-9 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 overflow-hidden">
+                            {msg.profilePicture ? (
+                              <img src={msg.profilePicture} alt={msg.senderName} className="w-full h-full object-cover" />
+                            ) : (
+                              <span>{getInitials(msg.senderName || 'Unknown')}</span>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
@@ -1020,7 +1102,7 @@ const UserDashboard = () => {
                       </svg>
                       Rate Your Mentor
                     </h2>
-                    <button onClick={() => navigate('/student/explore')} className="text-[#535353] hover:text-white text-xs font-medium">View All</button>
+                    <button onClick={() => navigate('/student/submissions')} className="text-[#535353] hover:text-white text-xs font-medium">View All</button>
                   </div>
 
                   {/* Tab Buttons */}
@@ -1055,6 +1137,7 @@ const UserDashboard = () => {
                               </div>
                               <p className="text-white font-medium text-xs truncate">{session.mentorId?.name}</p>
                             </div>
+                            <p className="text-[11px] text-gray-400 mb-2.5">Click on the buttons below to see session details for which you are rating</p>
                             <div className="grid grid-cols-3 gap-2">
                               <button 
                                 onClick={() => {
@@ -1109,30 +1192,46 @@ const UserDashboard = () => {
                       <div className="text-center py-4">
                         <p className="text-gray-400 text-xs">Loading submissions...</p>
                       </div>
-                    ) : submittedReviews.length > 0 ? (
+                    ) : Object.keys(groupedSubmissions).length > 0 ? (
                       <div className="space-y-3">
-                        {submittedReviews.slice(0, 3).map((review) => (
-                          <div key={review._id} className="p-3 bg-[#202327] rounded-lg border border-gray-600">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <p className="text-white font-medium text-xs">Submitted {formatLastInteraction(review.createdAt)}</p>
-                              </div>
-                              <div className="flex gap-0.5">
-                                {review.rating && [...Array(5)].map((_, i) => (
-                                  <svg key={i} className={`w-3 h-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                  </svg>
-                                ))}
-                              </div>
+                        {Object.entries(groupedSubmissions).slice(0, 1).map(([mentorName, reviews]) => (
+                          <div key={mentorName} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-semibold text-white">{mentorName}</h3>
+                              <span className="text-xs text-gray-400">{reviews.length} submission{reviews.length !== 1 ? 's' : ''}</span>
                             </div>
-                            {review.review && (
-                              <div className="mb-2">
-                                {review.review.startsWith('http') ? (
-                                  <div className="text-xs text-blue-400">📹 Video uploaded</div>
-                                ) : (
-                                  <p className="text-gray-300 text-xs line-clamp-2">{review.review}</p>
+                            {reviews.slice(0, 2).map((review) => (
+                              <div key={review._id} className="p-3 bg-[#202327] rounded-lg border border-gray-600">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div>
+                                    <p className="text-white font-medium text-xs">Submitted {formatLastInteraction(review.createdAt)}</p>
+                                  </div>
+                                  <div className="flex gap-0.5">
+                                    {review.rating && [...Array(5)].map((_, i) => (
+                                      <svg key={i} className={`w-3 h-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                      </svg>
+                                    ))}
+                                  </div>
+                                </div>
+                                {review.review && (
+                                  <div className="mb-2">
+                                    {review.review.startsWith('http') ? (
+                                      <div className="text-xs text-blue-400">📹 Video uploaded</div>
+                                    ) : (
+                                      <p className="text-gray-300 text-xs line-clamp-2">{review.review}</p>
+                                    )}
+                                  </div>
                                 )}
                               </div>
+                            ))}
+                            {Object.keys(groupedSubmissions).length > 1 && (
+                              <button 
+                                onClick={() => navigate('/student/submissions')}
+                                className="w-full mt-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs font-medium transition-colors"
+                              >
+                                View All Submissions
+                              </button>
                             )}
                           </div>
                         ))}
@@ -1152,9 +1251,9 @@ const UserDashboard = () => {
                       <svg className="w-4 h-4 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
-                      Your Mentors
+                      Your Recent Mentors
                     </h2>
-                    <button onClick={() => navigate('/student/explore')} className="text-[#535353] hover:text-white text-xs font-medium">View All</button>
+                    <button onClick={() => navigate('/student/mentors')} className="text-[#535353] hover:text-white text-xs font-medium">View All</button>
                   </div>
 
                   {mentorsLoading ? (
@@ -1273,6 +1372,7 @@ const UserDashboard = () => {
             sessionId={selectedSession.sessionId || selectedSession._id}
             bookingId={selectedSession._id}
             mentorName={selectedSession.mentorId?.name || selectedSession.mentor?.name || 'Mentor'}
+            sessionDate={selectedSession.sessionDate}
           />
           <ReviewModal
             isOpen={reviewModalOpen}
@@ -1280,6 +1380,7 @@ const UserDashboard = () => {
             sessionId={selectedSession.sessionId || selectedSession._id}
             bookingId={selectedSession._id}
             mentorName={selectedSession.mentorId?.name || selectedSession.mentor?.name || 'Mentor'}
+            sessionDate={selectedSession.sessionDate}
           />
           <VideoUploadModal
             isOpen={videoModalOpen}
@@ -1287,6 +1388,7 @@ const UserDashboard = () => {
             sessionId={selectedSession.sessionId || selectedSession._id}
             bookingId={selectedSession._id}
             mentorName={selectedSession.mentorId?.name || selectedSession.mentor?.name || 'Mentor'}
+            sessionDate={selectedSession.sessionDate}
           />
         </>
       )}

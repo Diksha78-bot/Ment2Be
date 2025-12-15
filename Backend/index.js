@@ -24,6 +24,9 @@ import availabilityRouter from './routes/availability.routes.js';
 import categoryRouter from './routes/category.routes.js';
 import uploadRouter from './routes/upload.routes.js';
 import aiRouter from './routes/ai.routes.js';
+import debugRouter from './routes/debug.routes.js';
+import connectionRouter from './routes/connection.routes.js';
+import journalRouter from './routes/journal.routes.js';
 import { handleSocketConnection, getRoomCount, getTotalParticipants } from './socket/socketHandlers.js';
 import { handleChatConnection, getActiveConversationCount, getTotalChatParticipants } from './socket/chatSocketHandlers.js';
 
@@ -135,6 +138,9 @@ app.use('/api/mentor-availability', availabilityRouter); // Mentor availability 
 app.use('/api/categories', categoryRouter); // Category endpoints
 app.use('/api/upload', uploadRouter); // File upload endpoints
 app.use('/api/ai', aiRouter); // AI session insights endpoints
+app.use('/api/debug', debugRouter); // Debug endpoints
+app.use('/api/connections', connectionRouter); // Mentor connections endpoints
+app.use('/api/journal', journalRouter); // Journal entries and notes endpoints
 
 // Initialize Socket.IO handlers
 handleSocketConnection(io);

@@ -41,8 +41,11 @@ const MentorDashboard = () => {
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [averageRating, setAverageRating] = useState(0);
+  const [selectedReview, setSelectedReview] = useState(null);
   const [activeReviewTab, setActiveReviewTab] = useState('videos'); // 'videos', 'ltm', 'session', 'trial'
   const [timeRefresh, setTimeRefresh] = useState(0); // Force re-render for dynamic time
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [connectionsLoading, setConnectionsLoading] = useState(true);
   const fileInputRef = useRef(null);
   const bioRef = useRef(null);
 
@@ -109,6 +112,33 @@ const MentorDashboard = () => {
     }
   };
 
+  const fetchConnectionsCount = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      setConnectionsLoading(true);
+      const response = await fetch('http://localhost:4000/api/connections/mentor-connections', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        console.log('✅ [MentorDashboard] Connections count:', data.count);
+        setConnectionsCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error('Error fetching connections count:', err);
+    } finally {
+      setConnectionsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!token) {
       navigate("/login", { replace: true });
@@ -119,6 +149,7 @@ const MentorDashboard = () => {
     fetchUpcomingSessions();
     fetchRecentMessages();
     fetchRecentMentees();
+    fetchConnectionsCount();
   }, [navigate]);
 
   // Fetch reviews after profile is loaded
@@ -163,11 +194,11 @@ const MentorDashboard = () => {
       const data = await response.json();
       
       if (response.ok && data.success && data.bookings) {
-        // Filter for upcoming sessions (confirmed or pending)
+        // Filter for upcoming sessions (confirmed or pending, excluding completed)
         const upcoming = data.bookings.filter(booking => {
           const sessionDate = new Date(booking.sessionDate);
           const now = new Date();
-          return sessionDate >= now && ['pending', 'confirmed'].includes(booking.status);
+          return sessionDate >= now && ['pending', 'confirmed'].includes(booking.status) && booking.status !== 'completed';
         }).sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
         
         setUpcomingSessions(upcoming.slice(0, 1)); // Show only next 1 session
@@ -238,7 +269,8 @@ const MentorDashboard = () => {
 
     try {
       setMenteesLoading(true);
-      const response = await fetch('http://localhost:4000/api/bookings/mentor', {
+      // Fetch connections instead of bookings to get recent connections
+      const response = await fetch('http://localhost:4000/api/connections/mentor-connections?status=connected', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -248,36 +280,17 @@ const MentorDashboard = () => {
 
       const data = await response.json();
       
-      if (response.ok && data.success && data.bookings) {
-        // Process mentees from bookings
-        const menteesMap = new Map();
-        
-        data.bookings.forEach(booking => {
-          if (!booking.student) return;
-          
-          const studentId = booking.student._id;
-          if (!menteesMap.has(studentId)) {
-            menteesMap.set(studentId, {
-              ...booking.student,
-              lastSession: booking.sessionDate,
-              sessions: [],
-              skills: booking.student.skills || ['General Mentoring']
-            });
-          }
-          
-          const mentee = menteesMap.get(studentId);
-          mentee.sessions.push(booking);
-          
-          // Update last session date if this one is more recent
-          if (new Date(booking.sessionDate) > new Date(mentee.lastSession)) {
-            mentee.lastSession = booking.sessionDate;
-          }
-        });
-        
-        // Convert to array and sort by last session date
-        const menteesArray = Array.from(menteesMap.values())
-          .sort((a, b) => new Date(b.lastSession) - new Date(a.lastSession))
-          .slice(0, 2); // Show only 2 most recent mentees
+      if (response.ok && data.success && data.data) {
+        // Process mentees from connections, sorted by connection date
+        const menteesArray = data.data
+          .map(connection => ({
+            ...connection.student,
+            lastConnection: connection.connectedAt,
+            sessions: [],
+            skills: connection.student.skills || ['General Mentoring']
+          }))
+          .sort((a, b) => new Date(b.lastConnection) - new Date(a.lastConnection))
+          .slice(0, 2); // Show only 2 most recent connections
         
         setRecentMentees(menteesArray);
       }
@@ -298,9 +311,10 @@ const MentorDashboard = () => {
 
     try {
       setReviewsLoading(true);
-      console.log('Fetching reviews for mentor:', profile._id);
+      console.log('Fetching reviews ABOUT mentor:', profile._id);
       
-      const response = await fetch(`http://localhost:4000/api/reviews?mentorId=${profile._id}`, {
+      // Use mentor query param to fetch reviews ABOUT this mentor (not BY this mentor)
+      const response = await fetch(`http://localhost:4000/api/reviews?mentor=${profile._id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -729,35 +743,28 @@ const MentorDashboard = () => {
     <div className="h-screen bg-[#0a0a0a] text-gray-100 overflow-hidden">
       {/* Custom Scrollbar Styles */}
       <style>{`
-        /* Webkit Scrollbar Styling */
+        /* Hide scrollbar but keep scrolling functionality */
         ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+          width: 0;
+          height: 0;
         }
         
         ::-webkit-scrollbar-track {
-          background: #121212;
-          border-radius: 4px;
+          background: transparent;
         }
         
         ::-webkit-scrollbar-thumb {
-          background: #535353;
-          border-radius: 4px;
-          border: 1px solid #202327;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-          background: #6b7280;
+          background: transparent;
         }
         
         ::-webkit-scrollbar-corner {
-          background: #121212;
+          background: transparent;
         }
         
-        /* Firefox Scrollbar Styling */
+        /* Firefox - Hide scrollbar */
         * {
-          scrollbar-width: thin;
-          scrollbar-color: #535353 #121212;
+          scrollbar-width: none;
+          scrollbar-color: transparent transparent;
         }
         
         /* Remove default arrows from number inputs */
@@ -785,9 +792,9 @@ const MentorDashboard = () => {
       `}</style>
       <MentorNavbar userName={profile?.name || "Mentor"} />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-12 gap-0 p-4 h-full pt-20 max-w-full mx-auto w-full px-16">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-12 gap-3 p-4 h-full pt-20 max-w-full mx-auto w-full px-16 overflow-hidden">
         {/* LEFT COLUMN - Profile Card */}
-        <aside className="col-span-1 md:col-span-1 lg:col-span-2 bg-[#121212] rounded-xl p-4 border border-gray-700 h-fit">
+        <aside className="col-span-1 md:col-span-1 lg:col-span-2 bg-[#121212] rounded-xl p-4 border border-gray-700 h-fit overflow-y-auto max-h-[calc(100vh-6rem)]">
           <div className="flex flex-col items-center text-center space-y-4">
             {/* Profile Photo */}
             <div className="relative group">
@@ -845,10 +852,13 @@ const MentorDashboard = () => {
 
             {/* Menu Items */}
             <div className="w-full space-y-2 mt-4">
-              <div className="flex items-center space-x-2 px-3 py-1.5 text-gray-300 text-sm">
+              <button
+                onClick={() => navigate('/mentor/students')}
+                className="w-full flex items-center space-x-2 px-3 py-1.5 text-gray-300 text-sm hover:bg-[#212121] rounded-lg transition-colors text-left"
+              >
                 <FiUsers className="w-4 h-4 text-blue-400" />
-                <span>Students: {profile?.mentorProfile?.studentCount || 0}</span>
-              </div>
+                <span>Students: {connectionsLoading ? '...' : connectionsCount}</span>
+              </button>
               
               <div className="flex items-center space-x-2 px-3 py-1.5 text-gray-300 text-sm">
                 <FiAward className="w-4 h-4 text-purple-400" />
@@ -1228,13 +1238,60 @@ const MentorDashboard = () => {
 
                   {/* Session Reviews Tab */}
                   {activeReviewTab === 'session' && (
-                    <div className="text-center py-8">
-                      <svg className="w-12 h-12 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                      <h3 className="text-lg font-medium text-white mb-2">No session reviews yet</h3>
-                      <p className="text-gray-400 text-sm">Session reviews will appear here</p>
-                    </div>
+                    <>
+                      {(() => {
+                        // Filter reviews to only show those with actual text comments (not just ratings or video URLs)
+                        const reviewsWithComments = reviews.filter(review => {
+                          if (!review.review || review.review.trim() === '') return false;
+                          // Exclude reviews that are just video URLs
+                          const isVideoUrl = review.review.includes('cloudinary.com') || review.review.includes('video/upload') || review.review.startsWith('http');
+                          return !isVideoUrl;
+                        });
+
+                        return reviewsWithComments.length > 0 ? (
+                          <div className="space-y-4">
+                            {reviewsWithComments.slice(0, 3).map((review) => {
+                              const truncatedText = review.review.length > 150 ? review.review.substring(0, 150) + '...' : review.review;
+                              const shouldTruncate = review.review.length > 150;
+
+                              return (
+                                <div 
+                                  key={review._id} 
+                                  className="p-4 bg-gray-800 rounded-lg border border-gray-700 cursor-pointer hover:border-gray-500 transition-colors"
+                                  onClick={() => setSelectedReview(review)}
+                                >
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center">
+                                      <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center mr-3">
+                                        {review.student?.profilePicture ? (
+                                          <img src={review.student.profilePicture} alt={review.student?.name} className="w-full h-full rounded-full object-cover" />
+                                        ) : (
+                                          <span className="text-white font-semibold text-sm">{review.student?.name?.charAt(0) || 'S'}</span>
+                                        )}
+                                      </div>
+                                      <div>
+                                        <p className="text-white font-medium text-sm">{review.student?.name || 'Anonymous'}</p>
+                                        <p className="text-gray-400 text-xs">{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <p className="text-gray-300 text-sm">{truncatedText}</p>
+                                  {shouldTruncate && <p className="text-xs text-blue-400 mt-2">Read more...</p>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <svg className="w-12 h-12 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <h3 className="text-lg font-medium text-white mb-2">No session reviews yet</h3>
+                            <p className="text-gray-400 text-sm">Session reviews will appear here</p>
+                          </div>
+                        );
+                      })()}
+                    </>
                   )}
 
                   {/* Trial Reviews Tab */}
@@ -1249,6 +1306,41 @@ const MentorDashboard = () => {
                   )}
                 </>
               )}
+            </div>
+          )}
+
+          {/* Review Modal */}
+          {selectedReview && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-[#1f1f1f] border border-[#333] rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-[#1f1f1f] border-b border-[#333] p-6 flex items-start justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                      {(selectedReview.student?.name || 'A')?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">{selectedReview.student?.name || 'Anonymous'}</h3>
+                      <p className="text-sm text-gray-400">
+                        {selectedReview.createdAt ? new Date(selectedReview.createdAt).toLocaleDateString() : 'Recently'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedReview(null)}
+                    className="text-gray-400 hover:text-gray-200 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="p-6">
+                  <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{selectedReview.review}</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1643,7 +1735,7 @@ const MentorDashboard = () => {
         </main>
 
         {/* RIGHT COLUMN - Next Session */}
-        <aside className="col-span-1 md:col-span-1 lg:col-span-3 space-y-3">
+        <aside className="col-span-1 md:col-span-1 lg:col-span-3 space-y-3 overflow-y-auto max-h-[calc(100vh-6rem)]">
           {/* Your Profile Card */}
           <div className="bg-[#121212] rounded-xl shadow-lg p-4 border border-gray-700">
             <h2 className="text-sm font-semibold mb-3 text-white flex items-center gap-2"><FiUsers className="w-4 h-4 text-indigo-400" />Your Profile</h2>

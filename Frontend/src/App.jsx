@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import './index.css';
+import LandingPageWithLoader from './pages/LandingPageWithLoader';
 import Login from './pages/Login';
 import StudentDashboard from './pages/StudentDashboard';
 import MentorDashboard from './pages/MentorDashboard';
@@ -26,6 +27,11 @@ import { ForumPage } from './components/Forum/ForumPage';
 import StudentForumPage from './pages/StudentForumPage';
 import MentorJournalPage from './pages/MentorJournalPage';
 import QuestionDetailPage from './pages/QuestionDetailPage';
+import SubmissionsPage from './pages/SubmissionsPage';
+import ConnectedStudents from './pages/ConnectedStudents';
+import StudentConnectedMentors from './pages/StudentConnectedMentors';
+import SolutionsPage from './pages/SolutionsPage';
+import ContactUsPage from './pages/ContactUsPage';
 
 function App() {
   const location = useLocation();
@@ -35,7 +41,9 @@ function App() {
       {/* ✅ key forces rerender on every navigation */}
       <Routes location={location} key={location.key}>
         {/* Root redirect */}
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<LandingPageWithLoader />} />
+        <Route path="/solutions" element={<SolutionsPage />} />
+        <Route path="/contact-us" element={<ContactUsPage />} />
 
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
@@ -50,10 +58,12 @@ function App() {
         <Route path="/student/profile" element={<ProfilePage />} />
         <Route path="/student/forum" element={<StudentForumPage />} />
         <Route path="/student/forum/question/:questionId" element={<QuestionDetailPage />} />
+        <Route path="/student/submissions" element={<SubmissionsPage />} />
         <Route path="/complete-profile" element={<ProfileCompletionPage />} />
         <Route path="/mentor-profile" element={<MentorDetailPage />} />
         <Route path="/booking" element={<BookSession />} />
         <Route path="/student/tasks" element={<StudentTaskPage />} />
+        <Route path="/student/mentors" element={<StudentConnectedMentors />} />
 
         {/* Meeting Routes */}
         <Route path="/student/meeting/:roomId/:sessionId" element={<MeetingRoomZego />} />
@@ -71,6 +81,7 @@ function App() {
         <Route path="/mentor/forum" element={<ForumPage />} />
         <Route path="/mentor/forum/question/:questionId" element={<QuestionDetailPage />} />
         <Route path="/mentor/journal" element={<MentorJournalPage />} />
+        <Route path="/mentor/students" element={<ConnectedStudents />} />
 
         {/* Testing Route */}
         <Route path="/karma-test" element={<KarmaTest />} />

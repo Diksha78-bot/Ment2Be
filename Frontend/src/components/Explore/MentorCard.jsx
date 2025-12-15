@@ -1,9 +1,58 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiStar, FiClock, FiMessageSquare } from 'react-icons/fi';
+import { FiStar, FiGift } from 'react-icons/fi';
 
 const MentorCard = ({ mentor }) => {
   const navigate = useNavigate();
+  const [mentorStats, setMentorStats] = useState({
+    mentoredStudents: 0,
+    totalSessions: 0
+  });
+
+  useEffect(() => {
+    const fetchMentorStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token || !mentor.id) {
+          console.log('⚠️ [MentorCard] Missing token or mentor.id:', { hasToken: !!token, mentorId: mentor.id });
+          return;
+        }
+
+        console.log('🔍 [MentorCard] Fetching stats for mentor:', mentor.id, 'Name:', mentor.name);
+
+        // Fetch mentor stats using the correct endpoint
+        const url = `http://localhost:4000/api/bookings/mentor/stats?mentorId=${mentor.id}`;
+        console.log('📍 [MentorCard] API URL:', url);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        console.log('📊 [MentorCard] API Response:', { status: response.status, success: data.success, sessionsCompleted: data.data?.sessionsCompleted });
+        
+        if (response.ok && data.success && data.data) {
+          console.log('✅ [MentorCard] Stats for', mentor.name, ':', { 
+            mentoredStudents: data.data.sessionsCompleted,
+            totalSessions: data.data.sessionsCompleted
+          });
+
+          setMentorStats({
+            mentoredStudents: data.data.sessionsCompleted || 0,
+            totalSessions: data.data.sessionsCompleted || 0
+          });
+        }
+      } catch (err) {
+        console.error('❌ [MentorCard] Error fetching mentor stats:', err);
+      }
+    };
+
+    fetchMentorStats();
+  }, [mentor.id]);
 
   const handleCardClick = () => {
     navigate(`/mentor-profile?mentor=${encodeURIComponent(mentor.name)}&mentorId=${mentor.id}`);
@@ -55,7 +104,7 @@ const MentorCard = ({ mentor }) => {
               </div>
               <div className="flex items-center bg-[#535353] text-white text-sm font-medium px-2 py-1 rounded">
                 <FiStar className="text-yellow-400 mr-1" />
-                {mentor.rating} ({mentor.ratedCount})
+                {Number(mentor.rating || mentor.averageRating || 0).toFixed(1)} ({mentor.ratedCount || mentor.totalReviews || 0})
               </div>
             </div>
 
@@ -72,20 +121,23 @@ const MentorCard = ({ mentor }) => {
               ))}
             </div>
 
-            {/* Availability Status Badges */}
-            <div className="mt-3 flex items-center gap-2 mb-3">
-              <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: '#da8c18' }}>
-                2 available
-              </span>
+            {/* Mentor Stats */}
+            <div className="mt-3 flex items-center gap-4 text-xs text-gray-300">
+              <div className="flex items-center gap-1">
+                <span>👥</span>
+                <span>Mentored {mentorStats.mentoredStudents} students</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span>⏱️</span>
+                <span>{mentorStats.totalSessions} sessions</span>
+              </div>
             </div>
 
             <div className="mt-4 flex justify-between items-center">
-              <div className="flex items-center text-sm text-gray-400">
-                <FiClock className="mr-1" size={16} style={{ color: '#73501c' }} />
-                <span>15 min</span>
-                <FiMessageSquare className="ml-3 mr-1" size={16} style={{ color: '#73501c' }} />
-                <span>Video Call</span>
-              </div>
+              <button className="flex items-center gap-1 px-3 py-1 bg-[#535353] hover:bg-[#6b7280] text-white rounded text-xs font-medium transition-colors">
+                <FiGift size={14} />
+                <span>Free Trial</span>
+              </button>
               <div className="text-lg font-bold text-[#535353]">
                 ${mentor.price}<span className="text-sm font-normal text-gray-400">/{mentor.priceUnit}</span>
               </div>

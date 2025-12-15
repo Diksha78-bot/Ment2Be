@@ -21,7 +21,8 @@ const UserSchema = new mongoose.Schema(
     profilePicture: { type: String, default: '' },
     phoneNumber: { type: String, required: false },
     isProfileComplete: { type: Boolean, default: false },
-    karmaPoints: { type: Number, default: 0 }
+    karmaPoints: { type: Number, default: 0 },
+    connectionsCount: { type: Number, default: 0 }
   },
   { timestamps: true }
 );
