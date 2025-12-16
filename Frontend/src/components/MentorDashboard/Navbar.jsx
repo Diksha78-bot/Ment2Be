@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Users, CheckSquare, MessageCircle, UserPlus, Menu, X, Home, LogOut, BookOpen } from 'lucide-react';
 import UserProfileSidebar from '../UserProfileSidebar';
-import Logo from '../../assets/Logo.png';
+import LogoHat from '../../assets/logo-hat.png';
 
 const MentorNavbar = ({ userName = 'Mentor' }) => {
   const navigate = useNavigate();
@@ -47,9 +47,10 @@ const MentorNavbar = ({ userName = 'Mentor' }) => {
       <div className="px-0">
         <div className="flex items-center justify-between h-14">
           
-          {/* Logo - Placeholder for new logo */}
-          <Link to="/mentor/dashboard" className="flex items-center hover:opacity-80 transition-opacity pl-4">
-            {/* New logo will be added here */}
+          {/* Logo and Branding */}
+          <Link to="/mentor/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity pl-4">
+            <img src={LogoHat} alt="Ment2Be" className="h-8 w-8" />
+            <span className="text-white font-bold text-lg hidden sm:inline">Ment2Be</span>
           </Link>
 
           {/* Desktop Navigation Items */}

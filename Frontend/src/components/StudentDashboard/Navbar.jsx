@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Home, Compass, BookOpen, MessageCircle, Clock, ListChecks, Menu, X, LogOut, MessageSquare } from 'lucide-react';
 import UserProfileSidebar from '../UserProfileSidebar';
+import LogoHat from '../../assets/logo-hat.png';
 
 const Navbar = ({ userName = 'Student' }) => {
   const navigate = useNavigate();
@@ -47,9 +48,10 @@ const Navbar = ({ userName = 'Student' }) => {
       <div className="px-0">
         <div className="flex items-center justify-between h-14">
 
-          {/* Logo - Placeholder for new logo */}
+          {/* Logo and Branding */}
           <Link to="/student/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity pl-4">
-            {/* New logo will be added here */}
+            <img src={LogoHat} alt="Ment2Be" className="h-8 w-8" />
+            <span className="text-white font-bold text-lg hidden sm:inline">Ment2Be</span>
           </Link>
 
           {/* Desktop Navigation Items */}
