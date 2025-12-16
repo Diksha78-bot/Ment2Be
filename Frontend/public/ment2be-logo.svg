@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#000000" stroke="#FFFFFF" stroke-width="2"/>
+  
+  <!-- White hat (graduation cap style) -->
+  <g transform="translate(100, 80)">
+    <!-- Hat brim -->
+    <ellipse cx="0" cy="0" rx="45" ry="12" fill="#FFFFFF"/>
+    
+    <!-- Hat crown -->
+    <path d="M -35 0 Q -35 -30 0 -40 Q 35 -30 35 0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+    
+    <!-- Hat top point -->
+    <circle cx="0" cy="-42" r="6" fill="#FFFFFF"/>
+    
+    <!-- Tassel -->
+    <line x1="0" y1="-42" x2="0" y2="5" stroke="#FFFFFF" stroke-width="2"/>
+    <circle cx="0" cy="8" r="4" fill="#FFFFFF"/>
+  </g>
+  
+  <!-- Text: Ment2Be -->
+  <text x="100" y="155" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Ment2Be</text>
+</svg>
