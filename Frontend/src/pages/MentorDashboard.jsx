@@ -78,7 +78,7 @@ const MentorDashboard = () => {
   // ✅ FETCH PROFILE FROM MONGODB
   const fetchProfile = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/user/me", {
+      const res = await fetch("https://k23dx.onrender.com/api/user/me" || "http://localhost:4000/api/user/me", {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -118,7 +118,7 @@ const MentorDashboard = () => {
 
     try {
       setConnectionsLoading(true);
-      const response = await fetch('http://localhost:4000/api/connections/mentor-connections', {
+      const response = await fetch('https://k23dx.onrender.com/api/connections/mentor-connections' || 'http://localhost:4000/api/connections/mentor-connections', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -183,7 +183,7 @@ const MentorDashboard = () => {
 
     try {
       setSessionsLoading(true);
-      const response = await fetch('http://localhost:4000/api/bookings/mentor', {
+      const response = await fetch('https://k23dx.onrender.com/api/bookings/mentor' || 'http://localhost:4000/api/bookings/mentor', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -217,7 +217,7 @@ const MentorDashboard = () => {
     try {
       setMessagesLoading(true);
       console.log('🔄 Fetching recent messages...');
-      const response = await fetch('http://localhost:4000/api/messages/conversations', {
+      const response = await fetch('https://k23dx.onrender.com/api/messages/conversations' || 'http://localhost:4000/api/messages/conversations', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -270,7 +270,7 @@ const MentorDashboard = () => {
     try {
       setMenteesLoading(true);
       // Fetch connections instead of bookings to get recent connections
-      const response = await fetch('http://localhost:4000/api/connections/mentor-connections?status=connected', {
+      const response = await fetch('https://k23dx.onrender.com/api/connections/mentor-connections?status=connected' || 'http://localhost:4000/api/connections/mentor-connections?status=connected', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -314,7 +314,7 @@ const MentorDashboard = () => {
       console.log('Fetching reviews ABOUT mentor:', profile._id);
       
       // Use mentor query param to fetch reviews ABOUT this mentor (not BY this mentor)
-      const response = await fetch(`http://localhost:4000/api/reviews?mentor=${profile._id}`, {
+      const response = await fetch(`${'https://k23dx.onrender.com' || 'http://localhost:4000'}/api/reviews?mentor=${profile._id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

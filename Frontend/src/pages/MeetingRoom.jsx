@@ -58,7 +58,7 @@ const MeetingRoom = () => {
   useEffect(() => {
 
     // Initialize Socket.IO connection
-    const newSocket = io('http://localhost:4000');
+    const newSocket = io('https://k23dx.onrender.com' || 'http://localhost:4000');
     setSocket(newSocket);
 
     // Socket event listeners

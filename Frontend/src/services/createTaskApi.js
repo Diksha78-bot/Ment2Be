@@ -4,15 +4,16 @@
  * Change ACTIVE_BACKEND to switch between Node.js and Java
  */
 
-// Switch between 'nodejs' and 'java'
-const ACTIVE_BACKEND = 'java';
+// Switch between 'nodejs', 'java', or 'render'
+const ACTIVE_BACKEND = 'render';
 
 const BACKEND_URLS = {
   nodejs: 'http://localhost:4000',
-  java: 'http://localhost:8081'
+  java: 'http://localhost:8081',
+  render: 'https://k23dx.onrender.com'
 };
 
-const BASE_URL = BACKEND_URLS[ACTIVE_BACKEND];
+const BASE_URL = BACKEND_URLS[ACTIVE_BACKEND] || 'https://k23dx.onrender.com';
 const API_URL = `${BASE_URL}/api/tasks`;
 
 const getAuthHeader = () => {
@@ -89,7 +90,7 @@ export const createTask = async (taskData) => {
  * @returns {string} 'nodejs' or 'java'
  */
 export const getActiveBackend = () => {
-  return ACTIVE_BACKEND;
+  return ACTIVE_BACKEND || 'render';
 };
 
 /**

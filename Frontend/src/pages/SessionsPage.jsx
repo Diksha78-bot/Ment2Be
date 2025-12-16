@@ -89,7 +89,7 @@ const SessionsPage = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('http://localhost:4000/api/bookings', {
+      const response = await fetch('https://k23dx.onrender.com/api/bookings' || 'http://localhost:4000/api/bookings', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

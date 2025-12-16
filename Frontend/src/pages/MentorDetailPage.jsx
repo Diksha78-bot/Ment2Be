@@ -41,7 +41,7 @@ const MentorDetailPage = () => {
         setError(null);
 
         // Fetch mentor by ID directly
-        const response = await fetch(`http://localhost:4000/api/mentors/${mentorId}`, {
+        const response = await fetch(`${'https://k23dx.onrender.com' || 'http://localhost:4000'}/api/mentors/${mentorId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

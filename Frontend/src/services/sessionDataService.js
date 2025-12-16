@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:4000/api';
+const API_BASE_URL = 'https://k23dx.onrender.com/api' || 'http://localhost:4000/api';
 
 class SessionDataService {
   // Helper method for authenticated fetch requests

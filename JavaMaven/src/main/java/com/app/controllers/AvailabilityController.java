@@ -30,11 +30,20 @@ public class AvailabilityController {
     
     // Save or update mentor availability
     @PostMapping
-    public ResponseEntity<?> saveAvailability(@RequestBody Map<String, Object> request, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<?> saveAvailability(@RequestBody Map<String, Object> request, @RequestHeader(value = "Authorization", required = false) String token) {
         try {
             logger.info("🟢 [JAVA BACKEND] POST /api/mentor-availability - Save availability request received");
-            logger.info("🟢 [JAVA BACKEND] Authorization token: {}", token.substring(0, Math.min(20, token.length())) + "...");
+            if (token != null) {
+                logger.info("🟢 [JAVA BACKEND] Authorization token: {}", token.substring(0, Math.min(20, token.length())) + "...");
+            }
             
+            if (token == null || token.isBlank() || token.equalsIgnoreCase("Bearer null") || token.equalsIgnoreCase("null")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "success", false,
+                    "message", "Missing or invalid Authorization token"
+                ));
+            }
+
             String mentorId = extractUserIdFromToken(token);
             String date = (String) request.get("date");
             List<String> timeSlotStrings = (List<String>) request.get("timeSlots");
@@ -107,14 +116,54 @@ public class AvailabilityController {
     public ResponseEntity<?> getAvailableSlots(
             @PathVariable String mentorId,
             @RequestParam String date,
-            @RequestHeader("Authorization") String token) {
+            @RequestHeader(value = "Authorization", required = false) String token) {
         try {
             logger.info("🟢 [JAVA BACKEND] GET /api/mentor-availability/{} - Get available slots for date: {}", mentorId, date);
+
+            if (token == null || token.isBlank() || token.equalsIgnoreCase("Bearer null") || token.equalsIgnoreCase("null")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "success", false,
+                    "message", "Missing or invalid Authorization token"
+                ));
+            }
+
+            String normalizedDate = date;
+            if (normalizedDate != null) {
+                normalizedDate = normalizedDate.trim();
+                if (normalizedDate.contains("T")) {
+                    normalizedDate = normalizedDate.substring(0, normalizedDate.indexOf('T'));
+                }
+            }
             
-            Optional<Availability> availability = availabilityRepository.findByMentorAndDateAndIsActive(mentorId, date, true);
+            Optional<Availability> availability = availabilityRepository.findByMentorAndDateAndIsActive(mentorId, normalizedDate, true);
+
+            if (availability.isEmpty()) {
+                try {
+                    List<Availability> mentorAvailabilities = availabilityRepository.findByMentorAndIsActiveTrueOrderByDateAsc(mentorId);
+                    for (Availability av : mentorAvailabilities) {
+                        String storedDate = av.getDate();
+                        if (storedDate != null && storedDate.startsWith(normalizedDate)) {
+                            availability = Optional.of(av);
+                            break;
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
             
             if (availability.isEmpty()) {
                 logger.info("🟡 [JAVA BACKEND] No availability found for mentor {} on {}", mentorId, date);
+
+                try {
+                    List<Availability> mentorAvailabilities = availabilityRepository.findByMentorAndIsActiveTrueOrderByDateAsc(mentorId);
+                    logger.info("🔍 [JAVA BACKEND] Mentor {} has {} active availability records total", mentorId, mentorAvailabilities.size());
+                    for (Availability av : mentorAvailabilities) {
+                        logger.info("🔍 [JAVA BACKEND] Mentor availability record date in DB: {}", av.getDate());
+                    }
+                } catch (Exception debugEx) {
+                    logger.error("🔴 [JAVA BACKEND] Error logging mentor availability dates: {}", debugEx.getMessage());
+                }
+
                 return ResponseEntity.ok(Map.of(
                     "success", true,
                     "availableSlots", new ArrayList<>(),
@@ -148,10 +197,23 @@ public class AvailabilityController {
     }
     
     // Get all availability for authenticated mentor
+    @GetMapping("/my-availability")
+    public ResponseEntity<?> getMyAvailability(@RequestHeader(value = "Authorization", required = false) String token) {
+        return getAllAvailability(token);
+    }
+
     @GetMapping("/mentor/all")
-    public ResponseEntity<?> getAllAvailability(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<?> getAllAvailability(@RequestHeader(value = "Authorization", required = false) String token) {
         try {
             logger.info("🟢 [JAVA BACKEND] GET /api/mentor-availability/mentor/all - Request received");
+
+            if (token == null || token.isBlank() || token.equalsIgnoreCase("Bearer null") || token.equalsIgnoreCase("null")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "success", false,
+                    "message", "Missing or invalid Authorization token"
+                ));
+            }
+
             logger.info("🟢 [JAVA BACKEND] Authorization token: {}", token.substring(0, Math.min(20, token.length())) + "...");
             
             String mentorId = extractUserIdFromToken(token);
@@ -198,8 +260,15 @@ public class AvailabilityController {
     @DeleteMapping("/{availabilityId}")
     public ResponseEntity<?> deleteAvailability(
             @PathVariable String availabilityId,
-            @RequestHeader("Authorization") String token) {
+            @RequestHeader(value = "Authorization", required = false) String token) {
         try {
+            if (token == null || token.isBlank() || token.equalsIgnoreCase("Bearer null") || token.equalsIgnoreCase("null")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "success", false,
+                    "message", "Missing or invalid Authorization token"
+                ));
+            }
+
             String mentorId = extractUserIdFromToken(token);
             logger.info("🟢 [JAVA BACKEND] DELETE /api/mentor-availability/{} - Delete availability", availabilityId);
             

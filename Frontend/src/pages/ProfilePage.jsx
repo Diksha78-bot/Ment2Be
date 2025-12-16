@@ -19,7 +19,7 @@ const ProfilePage = () => {
       try {
         setLoading(true);
         
-        const res = await fetch("http://localhost:4000/api/user/me", {
+        const res = await fetch("https://k23dx.onrender.com/api/user/me" || "http://localhost:4000/api/user/me", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

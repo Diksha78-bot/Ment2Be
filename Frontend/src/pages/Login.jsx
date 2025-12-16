@@ -7,7 +7,7 @@ import ProfileCarousel from '../components/auth/ProfileCarousel';
 import LoadingScreen from '../components/LoadingScreen';
 import { useGoogleOneTapLogin } from '@react-oauth/google';
 
-const API_URL = "http://localhost:4000/api";
+const API_URL = "https://k23dx.onrender.com/api" || "http://localhost:4000/api";
 
 const Login = () => {
   const navigate = useNavigate();

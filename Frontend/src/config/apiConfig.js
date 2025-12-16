@@ -3,13 +3,14 @@
  * Change ACTIVE_BACKEND to switch between implementations
  */
 
-// Set to 'nodejs' or 'java' to switch between backends
-const ACTIVE_BACKEND = 'nodejs'; // ✅ Using Node.js backend for forum
+// Set to 'nodejs', 'java', or 'render' to switch between backends
+const ACTIVE_BACKEND = 'render'; // ✅ Using Render backend
 
 // Base URLs for different backends
 const BASE_URLS = {
   nodejs: 'http://localhost:4000',
-  java: 'http://localhost:8081'
+  java: 'http://localhost:8081',
+  render: 'https://k23dx.onrender.com'
 };
 
 // API URLs for different services
@@ -21,6 +22,10 @@ const API_URLS = {
   java: {
     tasks: 'http://localhost:8081/api/tasks',
     forum: 'http://localhost:8081/api/forum'
+  },
+  render: {
+    tasks: 'https://k23dx.onrender.com/api/tasks',
+    forum: 'https://k23dx.onrender.com/api/forum'
   }
 };
 

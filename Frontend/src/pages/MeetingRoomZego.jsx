@@ -109,7 +109,7 @@ const MeetingRoomZego = () => {
     try {
       const token = localStorage.getItem('token');
       if (token && sessionId) {
-        const response = await fetch(`http://localhost:4000/api/bookings/${sessionId}/status`, {
+        const response = await fetch(`${'https://k23dx.onrender.com' || 'http://localhost:4000'}/api/bookings/${sessionId}/status`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

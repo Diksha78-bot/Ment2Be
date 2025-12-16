@@ -36,7 +36,7 @@ export default function MentorJournalPage() {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:4000/api/ai/session-insights/${sessionId}`, {
+      const response = await fetch(`${'https://k23dx.onrender.com' || 'http://localhost:4000'}/api/ai/session-insights/${sessionId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

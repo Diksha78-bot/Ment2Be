@@ -3,15 +3,16 @@
  * Easy backend switching between Node.js and Java
  */
 
-// Switch between 'nodejs' and 'java'
-const ACTIVE_BACKEND = 'nodejs';
+// Switch between 'nodejs', 'java', or 'render'
+const ACTIVE_BACKEND = 'render';
 
 const BACKEND_URLS = {
   nodejs: 'http://localhost:4000',
-  java: 'http://localhost:8081'
+  java: 'http://localhost:8081',
+  render: 'https://k23dx.onrender.com'
 };
 
-const BASE_URL = BACKEND_URLS[ACTIVE_BACKEND];
+const BASE_URL = BACKEND_URLS[ACTIVE_BACKEND] || 'https://k23dx.onrender.com';
 const API_URL = `${BASE_URL}/api/mentor-availability`;
 
 console.log(`🔧 [Availability Service] Using ${ACTIVE_BACKEND.toUpperCase()} backend: ${API_URL}`);
@@ -63,7 +64,7 @@ export const getAvailableSlots = async (mentorId, date) => {
   try {
     console.log(`📥 [${ACTIVE_BACKEND.toUpperCase()}] Fetching available slots for mentor ${mentorId} on ${date}`);
     
-    const response = await fetch(`${API_URL}/mentor/${mentorId}?date=${date}`, {
+    const response = await fetch(`${API_URL}/${mentorId}?date=${date}`, {
       method: 'GET',
       headers: getAuthHeader()
     });

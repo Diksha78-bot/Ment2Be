@@ -19,7 +19,7 @@ const MentorCard = ({ mentor, onNavigate }) => {
     const fetchAvailability = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:4000/api/mentor-availability/latest/${mentor._id}`, {
+        const response = await fetch(`${'https://k23dx.onrender.com' || 'http://localhost:4000'}/api/mentor-availability/latest/${mentor._id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -144,7 +144,7 @@ const UserDashboard = () => {
       try {
         setLoading(true);
 
-        const res = await fetch("http://localhost:4000/api/user/me", {
+        const res = await fetch("https://k23dx.onrender.com/api/user/me" || "http://localhost:4000/api/user/me", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -205,7 +205,7 @@ const UserDashboard = () => {
       if (!token) return;
 
       // Fetch connected mentors sorted by connection date (most recent first)
-      const response = await fetch('http://localhost:4000/api/connections/my-connections?status=connected', {
+      const response = await fetch('https://k23dx.onrender.com/api/connections/my-connections?status=connected', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -252,7 +252,7 @@ const UserDashboard = () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch('http://localhost:4000/api/mentors/top-experts?limit=3', {
+      const response = await fetch('https://k23dx.onrender.com/api/mentors/top-experts?limit=3' || 'http://localhost:4000/api/mentors/top-experts?limit=3', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -301,7 +301,7 @@ const UserDashboard = () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch('http://localhost:4000/api/connections/my-connections?status=connected', {
+      const response = await fetch('https://k23dx.onrender.com/api/connections/my-connections?status=connected' || 'http://localhost:4000/api/connections/my-connections?status=connected', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -329,7 +329,7 @@ const UserDashboard = () => {
 
     try {
       setSessionsLoading(true);
-      const response = await fetch('http://localhost:4000/api/bookings', {
+      const response = await fetch('https://k23dx.onrender.com/api/bookings' || 'http://localhost:4000/api/bookings', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -402,7 +402,7 @@ const UserDashboard = () => {
 
     try {
       setMessagesLoading(true);
-      const response = await fetch('http://localhost:4000/api/messages/conversations', {
+      const response = await fetch('https://k23dx.onrender.com/api/messages/conversations' || 'http://localhost:4000/api/messages/conversations', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -446,7 +446,7 @@ const UserDashboard = () => {
           messages.map(async (msg) => {
             if (!msg.profilePicture && msg.participantId) {
               try {
-                const mentorResponse = await fetch(`http://localhost:4000/api/mentors/${msg.participantId}`, {
+                const mentorResponse = await fetch(`${'https://k23dx.onrender.com' || 'http://localhost:4000'}/api/mentors/${msg.participantId}`, {
                   headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -520,7 +520,7 @@ const UserDashboard = () => {
       setReviewsLoading(true);
       console.log('Fetching submitted reviews for current user...');
       
-      const response = await fetch('http://localhost:4000/api/reviews', {
+      const response = await fetch('https://k23dx.onrender.com/api/reviews' || 'http://localhost:4000/api/reviews', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -572,7 +572,7 @@ const UserDashboard = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:4000/api/bookings/${session._id}/join`, {
+      const response = await fetch(`${'https://k23dx.onrender.com' || 'http://localhost:4000'}/api/bookings/${session._id}/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -658,7 +658,7 @@ const UserDashboard = () => {
         submitData.append('profilePicture', formData.profilePicture);
       }
 
-      const response = await fetch('http://localhost:4000/api/user/profile', {
+      const response = await fetch('https://k23dx.onrender.com/api/user/profile' || 'http://localhost:4000/api/user/profile', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
