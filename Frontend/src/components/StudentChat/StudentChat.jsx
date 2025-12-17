@@ -111,9 +111,10 @@ export function StudentChat() {
       try {
         setIsLoading(true);
 
-        const [conversations, confirmedSessions] = await Promise.all([
+        const [conversations, confirmedSessions, connections] = await Promise.all([
           messageService.getConversations(),
-          messageService.getConfirmedSessions()
+          messageService.getConfirmedSessions(),
+          messageService.getStudentConnections()
         ]);
 
         const mentorIdsWithSessions = new Set(
@@ -166,6 +167,30 @@ export function StudentChat() {
             hasConversation: false
           }));
 
+        const mentorsFromConnections = (connections || [])
+          .map((conn) => {
+            const mentor = conn?.mentor;
+            const mentorId = mentor?._id || mentor?.id;
+            if (!mentorId) return null;
+
+            return {
+              id: mentorId,
+              name: mentor?.name || "Unknown Mentor",
+              avatar: mentor?.profilePicture || "",
+              role: mentor?.role || "Mentor",
+              company: mentor?.company || "",
+              expertise: mentor?.skills || [],
+              lastMessage: "",
+              lastMessageTime: new Date(conn?.connectedAt || new Date()),
+              unreadCount: 0,
+              isOnline: false,
+              email: mentor?.email,
+              nextSession: null,
+              hasConversation: false
+            };
+          })
+          .filter(Boolean);
+
         // Deduplicate mentors by ID to prevent multiple chats with same mentor
         const mentorMap = new Map();
         
@@ -176,6 +201,12 @@ export function StudentChat() {
         
         // Add mentors from sessions only if not already in map
         mentorsFromSessions.forEach(mentor => {
+          if (!mentorMap.has(mentor.id)) {
+            mentorMap.set(mentor.id, mentor);
+          }
+        });
+
+        mentorsFromConnections.forEach((mentor) => {
           if (!mentorMap.has(mentor.id)) {
             mentorMap.set(mentor.id, mentor);
           }

@@ -64,7 +64,7 @@ export const getAvailableSlots = async (mentorId, date) => {
   try {
     console.log(`📥 [${ACTIVE_BACKEND.toUpperCase()}] Fetching available slots for mentor ${mentorId} on ${date}`);
     
-    const response = await fetch(`${API_URL}/${mentorId}?date=${date}`, {
+    const response = await fetch(`${API_URL}/mentor/${mentorId}?date=${date}`, {
       method: 'GET',
       headers: getAuthHeader()
     });

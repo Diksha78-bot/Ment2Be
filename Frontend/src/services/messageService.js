@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://k23dx.onrender.com/api' || 'http://localhost:4000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 // Get auth token from localStorage
 const getAuthToken = () => {
@@ -131,7 +131,7 @@ export const messageService = {
   // Get users that can be messaged
   getMessageableUsers: async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/messages/users`, {
+      const response = await fetch(`${API_BASE_URL}/messages/messageable-users`, {
         method: 'GET',
         headers: getAuthHeaders()
       });
@@ -140,6 +140,36 @@ export const messageService = {
       return result.data || [];
     } catch (error) {
       console.error('Error fetching messageable users:', error);
+      throw error;
+    }
+  },
+
+  getStudentConnections: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/connections/my-connections?status=connected`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      const result = await handleResponse(response);
+      return result.data || [];
+    } catch (error) {
+      console.error('Error fetching student connections:', error);
+      throw error;
+    }
+  },
+
+  getMentorConnections: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/connections/mentor-connections?status=connected`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      const result = await handleResponse(response);
+      return result.data || [];
+    } catch (error) {
+      console.error('Error fetching mentor connections:', error);
       throw error;
     }
   },

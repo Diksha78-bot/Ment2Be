@@ -407,66 +407,100 @@ const LandingPage = () => {
               <div className="overflow-hidden">
                 <div className="flex animate-scroll space-x-8">
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/cheerful-indian-businessman-smiling-closeup-portrait-jobs-career-campaign.jpg" alt="Dr. Sarah Johnson" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">Dr. Sarah Johnson</p>
                     <p className="text-gray-300 text-sm">Tech Expert</p>
                   </div>
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/cheerful-indian-man.jpg" alt="Prof. Michael Chen" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">Prof. Michael Chen</p>
                     <p className="text-gray-300 text-sm">Data Science</p>
                   </div>
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/close-up-excited-person-portrait.jpg" alt="Emily Rodriguez" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">Emily Rodriguez</p>
                     <p className="text-gray-300 text-sm">Design Lead</p>
                   </div>
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/medium-shot-smiley-man-posing.jpg" alt="James Wilson" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">James Wilson</p>
                     <p className="text-gray-300 text-sm">Business Strategy</p>
                   </div>
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/happy-brunette-woman-confident-with-natural-hair-feeling-satisfied.jpg" alt="Lisa Thompson" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">Lisa Thompson</p>
                     <p className="text-gray-300 text-sm">Marketing Pro</p>
                   </div>
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/portrait-young-indian-businessman-student-sitting-with-pen.jpg" alt="David Kim" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">David Kim</p>
                     <p className="text-gray-300 text-sm">AI Specialist</p>
                   </div>
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/pleased-young-brunette-caucasian-woman-stands-sideways-with-crossed-arms.jpg" alt="Dr. Maria Garcia" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">Dr. Maria Garcia</p>
                     <p className="text-gray-300 text-sm">Healthcare</p>
                   </div>
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/portrait-young-stylish-indian-man-model-isolated-pink-wall-background.jpg" alt="Robert Taylor" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">Robert Taylor</p>
                     <p className="text-gray-300 text-sm">Finance Expert</p>
                   </div>
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/smiling-young-beautiful-girl-looking-straight-ahead-wearing-white-t-shirt-isolated-pink.jpg" alt="Jennifer Lee" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">Jennifer Lee</p>
                     <p className="text-gray-300 text-sm">Education Tech</p>
                   </div>
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/smiling-young-brunette-caucasian-girl-looks-camera-olive-green.jpg" alt="Alex Martinez" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">Alex Martinez</p>
                     <p className="text-gray-300 text-sm">Software Dev</p>
                   </div>
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/cheerful-indian-man.jpg" alt="Sophie Brown" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">Sophie Brown</p>
                     <p className="text-gray-300 text-sm">UX Research</p>
                   </div>
                   <div className="flex-shrink-0 text-center">
-                    <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-2"></div>
+                    <img src="/close-up-excited-person-portrait.jpg" alt="Kevin Davis" className="w-16 h-16 rounded-full mx-auto mb-2 object-cover" />
                     <p className="text-white font-semibold">Kevin Davis</p>
                     <p className="text-gray-300 text-sm">Product Mgmt</p>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-16">
+            <div className="max-w-3xl mx-auto text-center">
+              <div className="flex justify-center mb-6">
+                <img
+                  src={mentoringIllustration}
+                  alt="Mentorship"
+                  className="w-28 h-28 white-illustration"
+                />
+              </div>
+
+              <p className="text-[#d9d3c7] text-sm tracking-wide mb-6">Have that “aha” mentorship moment</p>
+
+              <h3 className="text-4xl md:text-5xl font-extrabold text-[#f3ead7] leading-tight">
+                Lots of platforms promise to “match” you with a mentor,
+                then leave you with a bunch of empty chats.
+                <span className="text-[#ff6fae]"> Hooray, you got nowhere.</span>
+              </h3>
+
+              <p className="text-[#d9d3c7] text-base md:text-lg mt-8 leading-relaxed">
+                We don’t skip the hard parts. Ment2Be helps you book sessions, set clear goals,
+                track tasks, and get feedback — so you keep moving forward, one step at a time.
+              </p>
+
+              <div className="mt-10 flex justify-center">
+                <Link
+                  to="/login"
+                  className="inline-flex items-center justify-center px-10 py-3 rounded-full bg-[#ff6fae] text-black font-semibold shadow-[0_10px_30px_rgba(255,111,174,0.25)] hover:bg-[#ff86bb] transition-colors"
+                >
+                  I’M READY LET’S GO!
+                </Link>
               </div>
             </div>
           </div>

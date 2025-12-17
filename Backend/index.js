@@ -28,6 +28,7 @@ import aiRouter from './routes/ai.routes.js';
 import debugRouter from './routes/debug.routes.js';
 import connectionRouter from './routes/connection.routes.js';
 import journalRouter from './routes/journal.routes.js';
+import contactRouter from './routes/contact.routes.js';
 import { handleSocketConnection, getRoomCount, getTotalParticipants } from './socket/socketHandlers.js';
 import { handleChatConnection, getActiveConversationCount, getTotalChatParticipants } from './socket/chatSocketHandlers.js';
 
@@ -146,6 +147,7 @@ app.use('/api/ai', aiRouter); // AI session insights endpoints
 app.use('/api/debug', debugRouter); // Debug endpoints
 app.use('/api/connections', connectionRouter); // Mentor connections endpoints
 app.use('/api/journal', journalRouter); // Journal entries and notes endpoints
+app.use('/api/contact', contactRouter); // Contact form email endpoint
 
 // Initialize Socket.IO handlers
 handleSocketConnection(io);

@@ -291,9 +291,10 @@ export function MentorshipChat() {
       setLoading(true);
       
       // Fetch both conversations and confirmed sessions in parallel
-      const [conversationsData, confirmedSessions] = await Promise.all([
+      const [conversationsData, confirmedSessions, mentorConnections] = await Promise.all([
         messageService.getConversations(),
-        fetchConfirmedSessions()
+        fetchConfirmedSessions(),
+        messageService.getMentorConnections()
       ]);
       
       // Transform regular conversations
@@ -323,6 +324,27 @@ export function MentorshipChat() {
         if (!conversationMap.has(session.participantId)) {
           conversationMap.set(session.participantId, session);
         }
+      });
+
+      (mentorConnections || []).forEach((conn) => {
+        const student = conn?.student;
+        const studentId = student?._id || student?.id;
+        if (!studentId) return;
+
+        if (conversationMap.has(studentId)) return;
+
+        conversationMap.set(studentId, {
+          id: `connection_${conn._id || studentId}`,
+          participantId: studentId,
+          mentorName: student?.name || 'Student',
+          mentorAvatar: student?.profilePicture || '',
+          mentorRole: student?.role || 'Student',
+          lastMessage: '',
+          lastMessageTime: new Date(conn?.connectedAt || new Date()),
+          unreadCount: 0,
+          isOnline: false,
+          isSession: false
+        });
       });
       
       // Convert map to array and sort by last message time (newest first)
