@@ -5,7 +5,7 @@
  */
 
 // Switch between 'nodejs', 'java', or 'render'
-const ACTIVE_BACKEND = 'java';
+const ACTIVE_BACKEND = 'render';
 
 const BACKEND_URLS = {
   nodejs: 'http://localhost:4000',
