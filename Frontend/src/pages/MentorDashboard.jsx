@@ -6,6 +6,7 @@ import { FiUpload, FiX, FiCalendar, FiUsers, FiClock, FiEdit3, FiSettings, FiLog
 import { formatDistanceToNow } from 'date-fns';
 import KarmaPointsCard from '../components/KarmaPointsCard/KarmaPointsCard';
 import PageLoader from '../components/PageLoader';
+import { getApiUrl } from '../config/backendConfig';
 
 const MentorDashboard = () => {
   const navigate = useNavigate();
@@ -413,8 +414,10 @@ const MentorDashboard = () => {
     try {
       const payload = buildProfilePayload(overrides);
       console.log('Saving profile with payload:', payload);
+
+      const apiUrl = getApiUrl().replace(/\/$/, '');
       
-      const response = await fetch("http://localhost:4000/api/mentors/profile", {
+      const response = await fetch(`${apiUrl}/mentors/profile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
