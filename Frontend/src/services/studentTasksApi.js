@@ -4,8 +4,10 @@
  * Change BACKEND_URL to switch between Node.js and Java
  */
 
+import { getApiUrl as getBaseApiUrl } from '../config/backendConfig';
+
 // Switch between 'nodejs', 'java', or 'render'
-const ACTIVE_BACKEND = 'java';
+const ACTIVE_BACKEND = import.meta.env.VITE_BACKEND || (import.meta.env.PROD ? 'render' : 'nodejs');
 
 const BACKEND_URLS = {
   nodejs: 'http://localhost:4000',
@@ -14,7 +16,7 @@ const BACKEND_URLS = {
 };
 
 const BASE_URL = BACKEND_URLS[ACTIVE_BACKEND] || 'https://k23dx.onrender.com';
-const API_URL = `${BASE_URL}/api/tasks`;
+const API_URL = `${(getBaseApiUrl() || `${BASE_URL}/api`).replace(/\/$/, '')}/tasks`;
 
 const getAuthHeader = () => {
   const token = localStorage.getItem('token');

@@ -1,6 +1,8 @@
 // Task Service - Handles all task-related API calls to Java backend
 
-const API_BASE_URL = 'http://localhost:8081/api/tasks';
+import { getApiUrl } from '../config/backendConfig';
+
+const API_BASE_URL = `${getApiUrl().replace(/\/$/, '')}/tasks`;
 
 const getAuthHeader = () => {
   const token = localStorage.getItem('token');

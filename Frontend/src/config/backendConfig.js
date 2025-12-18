@@ -5,7 +5,7 @@
 
 // Set the active backend: 'nodejs' or 'java'
 // Use Vite's import.meta.env instead of process.env
-const ACTIVE_BACKEND = import.meta.env.VITE_BACKEND || 'java';
+const ACTIVE_BACKEND = import.meta.env.VITE_BACKEND || (import.meta.env.PROD ? 'render' : 'nodejs');
 
 // Backend URLs
 const BACKENDS = {
@@ -18,6 +18,11 @@ const BACKENDS = {
     name: 'Java Spring Boot Backend',
     url: 'http://localhost:8081',
     apiUrl: 'http://localhost:8081/api'
+  },
+  render: {
+    name: 'Render Backend',
+    url: 'https://k23dx.onrender.com',
+    apiUrl: 'https://k23dx.onrender.com/api'
   }
 };
 
@@ -33,7 +38,7 @@ export const getBackendConfig = () => {
 
 // Get API URL
 export const getApiUrl = () => {
-  return getBackendConfig().apiUrl;
+  return import.meta.env.VITE_API_URL || getBackendConfig().apiUrl;
 };
 
 // Get backend name
