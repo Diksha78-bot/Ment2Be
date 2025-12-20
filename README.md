@@ -269,13 +269,9 @@ Ment2Be/
 |:---:|:---:|
 | <img src="Frontend/src/assets/student2.png" alt="Student Features" width="100%"/> | <img src="Frontend/src/assets/mentor.png" alt="Live Chat" width="100%"/> |
 
-| Screenshot 1 | Screenshot 2 |
+| Rate Your Mentor | Your Journal |
 |:---:|:---:|
-| <img src="Frontend/src/assets/s1.png" alt="Screenshot 1" width="100%"/> | <img src="Frontend/src/assets/s2.png" alt="Screenshot 2" width="100%"/> |
-
-| Screenshot 3 |
-|:---:|
-| <img src="Frontend/src/assets/s3.png" alt="Screenshot 3" width="100%"/> |
+| <img src="Frontend/src/assets/s1.png" alt="Rate Your Mentor" width="100%"/> | <img src="Frontend/src/assets/s3.png" alt="Your Journal" width="100%"/> |
 
 </div>
 
