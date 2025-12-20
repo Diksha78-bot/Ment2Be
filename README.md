@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Frontend/src/assets/Logo.png" alt="Ment2Be Logo" width="120"/>
+  <img src="Frontend/src/assets/logo-hat.png" alt="Ment2Be Logo" width="120"/>
 </p>
 
 <h1 align="center">🎓 Ment2Be</h1>
