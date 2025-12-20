@@ -273,6 +273,10 @@ Ment2Be/
 |:---:|:---:|
 | <img src="Frontend/src/assets/s1.png" alt="Rate Your Mentor" width="100%"/> | <img src="Frontend/src/assets/s3.png" alt="Your Journal" width="100%"/> |
 
+| Find Mentors | Your Mentees |
+|:---:|:---:|
+| <img src="Frontend/src/assets/s4.png" alt="Find Mentors" width="100%"/> | <img src="Frontend/src/assets/s5.png" alt="Your Mentees" width="100%"/> |
+
 </div>
 
 ---
