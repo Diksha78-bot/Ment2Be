@@ -1,375 +1,257 @@
 <p align="center">
-  <img src="Frontend/src/assets/logo-hat.png" alt="Ment2Be Logo" width="120"/>
+  <img src="Frontend/src/assets/logo-hat.png" alt="Ment2Be Logo" width="80"/>
 </p>
 
-<h1 align="center">🎓 Ment2Be</h1>
+<h1 align="center">Ment2Be</h1>
 
 <p align="center">
   <strong>Connect. Learn. Grow.</strong><br/>
-  A modern mentorship platform connecting students with industry experts for personalized guidance and career growth.
+  A full-stack mentorship platform connecting students with industry experts for personalized guidance and career growth.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/React-19.1-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React"/>
-  <img src="https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js"/>
-  <img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB"/>
-  <img src="https://img.shields.io/badge/Express-5.1-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express"/>
-  <img src="https://img.shields.io/badge/TailwindCSS-3.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="TailwindCSS"/>
+  <img src="https://img.shields.io/badge/React-19.1-61DAFB?logo=react&logoColor=white" alt="React"/>
+  <img src="https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white" alt="Node.js"/>
+  <img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white" alt="MongoDB"/>
+  <img src="https://img.shields.io/badge/Express-5.1-000000?logo=express&logoColor=white" alt="Express"/>
+  <img src="https://img.shields.io/badge/TailwindCSS-3.4-06B6D4?logo=tailwindcss&logoColor=white" alt="TailwindCSS"/>
+  <img src="https://img.shields.io/badge/Socket.IO-4.8-010101?logo=socket.io&logoColor=white" alt="Socket.IO"/>
+  <img src="https://img.shields.io/badge/License-ISC-blue" alt="License"/>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Socket.IO-Real--time-010101?style=for-the-badge&logo=socket.io&logoColor=white" alt="Socket.IO"/>
-  <img src="https://img.shields.io/badge/ZegoCloud-Video-FF6B35?style=for-the-badge" alt="ZegoCloud"/>
-  <img src="https://img.shields.io/badge/Cloudinary-Media-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white" alt="Cloudinary"/>
-  <img src="https://img.shields.io/badge/Razorpay-Payments-0C2451?style=for-the-badge" alt="Razorpay"/>
+  <img src="Frontend/src/assets/MentorDahboard.png" alt="Ment2Be Dashboard Preview" width="80%"/>
 </p>
 
----
+## Table of Contents
 
-## 📸 Screenshots
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [Environment Variables](#environment-variables)
+- [Usage](#usage)
+- [API Overview](#api-overview)
+- [Screenshots](#screenshots)
+- [Contributing](#contributing)
+- [Support](#support)
+- [License](#license)
 
-<table>
-  <tr>
-    <td align="center" width="50%">
-      <img src="Frontend/src/assets/MentorDahboard.png" alt="Mentor Dashboard" width="100%"/>
-      <br/><strong>Mentor Dashboard</strong>
-    </td>
-    <td align="center" width="50%">
-      <img src="Frontend/src/assets/studentdashbaordimage.png" alt="Student Dashboard" width="100%"/>
-      <br/><strong>Student Dashboard</strong>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <img src="Frontend/src/assets/connect1.png" alt="Connect with Mentors" width="100%"/>
-      <br/><strong>Connect with Mentors</strong>
-    </td>
-    <td align="center" width="50%">
-      <img src="Frontend/src/assets/connect 2.png" alt="Mentorship Journey" width="100%"/>
-      <br/><strong>Mentorship Journey</strong>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <img src="Frontend/src/assets/taskbymentee.png" alt="Task Management" width="100%"/>
-      <br/><strong>Task Management</strong>
-    </td>
-    <td align="center" width="50%">
-      <img src="Frontend/src/assets/trust.png" alt="Trusted Platform" width="100%"/>
-      <br/><strong>Trusted Platform</strong>
-    </td>
-  </tr>
-</table>
+## Features
 
----
+### For Students
+- **Explore Mentors** — Browse mentors by skills, expertise, and ratings
+- **Book Sessions** — Schedule 1-on-1 video sessions
+- **Real-time Chat** — Instant messaging with Socket.IO
+- **Task Management** — Track assignments and learning goals
+- **Learning Journal** — Document growth and insights
+- **Rate & Review** — Share feedback with video testimonials
+- **Karma Points** — Earn rewards for engagement
 
-## ✨ Features
+### For Mentors
+- **Dashboard Analytics** — Track mentees, sessions, and performance
+- **Availability Management** — Set available time slots
+- **Task Assignment** — Create and track tasks for mentees
+- **Earnings Tracking** — Monitor payments and revenue
+- **Profile Customization** — Showcase skills and hourly rates
 
-### 👨‍🎓 For Students
-- **🔍 Explore Mentors** - Browse and filter mentors by skills, expertise, and ratings
-- **📅 Book Sessions** - Schedule 1-on-1 video sessions with mentors
-- **💬 Real-time Chat** - Instant messaging with connected mentors
-- **📝 Task Management** - Track assignments and learning goals
-- **📓 Learning Journal** - Document your growth and insights
-- **⭐ Rate & Review** - Share feedback on mentorship sessions
-- **🎥 Video Testimonials** - Upload video reviews for mentors
-- **🏆 Karma Points** - Earn rewards for engagement and achievements
+### Platform Features
+- **HD Video Conferencing** — Powered by ZegoCloud with screen sharing
+- **Real-time Messaging** — Typing indicators, read receipts, online status
+- **Secure Authentication** — JWT + Google OAuth with role-based access
+- **Payment Integration** — Razorpay for session bookings
+- **Media Uploads** — Cloudinary for profile pictures and videos
 
-### 👨‍🏫 For Mentors
-- **📊 Dashboard Analytics** - Track mentees, sessions, and performance
-- **📆 Availability Management** - Set your available time slots
-- **👥 Mentee Management** - View and manage connected students
-- **✅ Task Assignment** - Create and track tasks for mentees
-- **💰 Earnings Tracking** - Monitor session payments and revenue
-- **🌟 Profile Customization** - Showcase skills, experience, and rates
-- **📈 Reviews & Ratings** - Build reputation through student feedback
+## Tech Stack
 
-### 🎥 Video Conferencing
-- **HD Video Calls** - Powered by ZegoCloud for seamless video sessions
-- **Screen Sharing** - Share your screen during mentorship sessions
-- **In-call Chat** - Text chat during video sessions
-- **Session Recording** - Record sessions for future reference
+| Layer | Technologies |
+|-------|-------------|
+| **Frontend** | React 19, Vite 7, TailwindCSS, React Router 7, Framer Motion |
+| **Backend** | Node.js 18+, Express 5, MongoDB Atlas, Mongoose 8 |
+| **Real-time** | Socket.IO 4.8, Stream Chat |
+| **Video** | ZegoCloud UIKit |
+| **Auth** | JWT, Google OAuth, bcrypt |
+| **Storage** | Cloudinary |
+| **Payments** | Razorpay |
+| **Email** | Nodemailer |
 
-### 💬 Real-time Communication
-- **Instant Messaging** - Socket.IO powered real-time chat
-- **Typing Indicators** - See when others are typing
-- **Read Receipts** - Know when messages are read
-- **Online Status** - See who's currently online
-
-### 🔐 Security & Authentication
-- **JWT Authentication** - Secure token-based auth
-- **Google OAuth** - Sign in with Google
-- **Password Recovery** - Email-based password reset
-- **Role-based Access** - Separate student and mentor permissions
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-| Technology | Purpose |
-|------------|---------|
-| React 19 | UI Framework |
-| Vite 7 | Build Tool |
-| TailwindCSS 3.4 | Styling |
-| React Router 7 | Navigation |
-| Socket.IO Client | Real-time Communication |
-| ZegoCloud UIKit | Video Conferencing |
-| Framer Motion | Animations |
-| Lucide React | Icons |
-| Axios | HTTP Client |
-
-### Backend
-| Technology | Purpose |
-|------------|---------|
-| Node.js 18+ | Runtime |
-| Express 5 | Web Framework |
-| MongoDB Atlas | Database |
-| Mongoose 8 | ODM |
-| Socket.IO | WebSocket Server |
-| JWT | Authentication |
-| Cloudinary | Media Storage |
-| Nodemailer | Email Service |
-| Razorpay | Payment Gateway |
-| Twilio | SMS/Video Services |
-
----
-
-## 🚀 Getting Started
+## Quick Start
 
 ### Prerequisites
-- Node.js 18 or higher
+
+- Node.js 18+
 - MongoDB Atlas account
 - Cloudinary account
 - ZegoCloud account (for video)
 
 ### Installation
 
-1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/ment2be.git
-cd ment2be
-```
+# Clone the repository
+git clone https://github.com/arshchouhan/Ment2Be.git
+cd Ment2Be
 
-2. **Install Backend Dependencies**
-```bash
+# Install backend dependencies
 cd Backend
 npm install
-```
 
-3. **Configure Backend Environment**
-```bash
+# Configure environment
 cp .env.example .env
-# Edit .env with your credentials
-```
+# Edit .env with your credentials (see Environment Variables section)
 
-Required environment variables:
-```env
-# Database
-MONGO_URI=your_mongodb_connection_string
-
-# Authentication
-JWT_SECRET=your_jwt_secret
-
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# Email
-EMAIL_USER=your_email
-EMAIL_PASS=your_email_password
-
-# Razorpay (optional)
-RAZORPAY_KEY_ID=your_key_id
-RAZORPAY_KEY_SECRET=your_key_secret
-```
-
-4. **Install Frontend Dependencies**
-```bash
+# Install frontend dependencies
 cd ../Frontend
 npm install
 ```
 
-5. **Configure Frontend Environment**
-```bash
-# Create .env.local file
-VITE_API_URL=http://localhost:4000
-VITE_ZEGO_APP_ID=your_zego_app_id
-VITE_ZEGO_SERVER_SECRET=your_zego_server_secret
-```
+### Running Locally
 
-### Running the Application
-
-**Start Backend Server**
 ```bash
+# Terminal 1: Start backend (http://localhost:4000)
 cd Backend
 npm run dev
-# Server runs on http://localhost:4000
-```
 
-**Start Frontend Development Server**
-```bash
+# Terminal 2: Start frontend (http://localhost:5173)
 cd Frontend
 npm run dev
-# App runs on http://localhost:5173
 ```
 
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 Ment2Be/
 ├── Backend/
-│   ├── config/          # Database & service configurations
-│   ├── controllers/     # Route handlers
-│   ├── middleware/      # Auth & validation middleware
-│   ├── models/          # MongoDB schemas
-│   ├── routes/          # API routes
-│   ├── services/        # Business logic
-│   ├── socket/          # Socket.IO handlers
-│   ├── utils/           # Helper functions
-│   └── index.js         # Server entry point
+│   ├── config/           # Database & service configs
+│   ├── controllers/      # Request handlers (23 controllers)
+│   ├── middleware/       # Auth & validation
+│   ├── models/           # MongoDB schemas (17 models)
+│   ├── routes/           # API routes (26 route files)
+│   ├── services/         # Business logic
+│   ├── socket/           # Socket.IO handlers
+│   └── index.js          # Server entry point
 │
 ├── Frontend/
-│   ├── src/
-│   │   ├── assets/      # Images & static files
-│   │   ├── components/  # Reusable UI components
-│   │   ├── config/      # App configuration
-│   │   ├── context/     # React context providers
-│   │   ├── hooks/       # Custom React hooks
-│   │   ├── pages/       # Page components
-│   │   ├── services/    # API service functions
-│   │   └── utils/       # Utility functions
-│   └── index.html       # HTML entry point
+│   └── src/
+│       ├── assets/       # Images & static files
+│       ├── components/   # Reusable UI (75+ components)
+│       ├── config/       # API & backend configuration
+│       ├── context/      # React context providers
+│       ├── pages/        # Page components (38 pages)
+│       ├── services/     # API service functions
+│       └── App.jsx       # Root component with routes
 │
 └── README.md
 ```
 
----
+## Environment Variables
 
-## 🔌 API Endpoints
+### Backend (`Backend/.env`)
 
-### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | User login |
-| POST | `/api/auth/google` | Google OAuth login |
-| POST | `/api/auth/forgot-password` | Request password reset |
-| POST | `/api/auth/reset-password` | Reset password |
+```env
+# Required
+MONGO_URI=mongodb+srv://...
+JWT_SECRET=your_secret_key
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
-### Users
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/user/me` | Get current user profile |
-| PUT | `/api/user/update` | Update user profile |
-| POST | `/api/user/upload-photo` | Upload profile picture |
+# Optional
+GOOGLE_CLIENT_ID=your_google_client_id
+STREAM_API_KEY=your_stream_key
+STREAM_API_SECRET=your_stream_secret
+TWILIO_ACCOUNT_SID=your_twilio_sid
+TWILIO_AUTH_TOKEN=your_twilio_token
+GEMINI_API_KEY=your_gemini_key
+```
 
-### Mentors
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/mentors` | Get all mentors |
-| GET | `/api/mentors/:id` | Get mentor by ID |
-| GET | `/api/mentors/top-experts` | Get top-rated mentors |
-| PUT | `/api/mentors/profile` | Update mentor profile |
+See `Backend/.env.example` for the complete list.
 
-### Bookings
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/bookings` | Create booking |
-| GET | `/api/bookings` | Get user bookings |
-| POST | `/api/bookings/:id/join` | Join session |
-| PUT | `/api/bookings/:id/status` | Update booking status |
+### Frontend (`Frontend/.env.local`)
 
-### Messages
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/messages/conversations` | Get conversations |
-| GET | `/api/messages/conversations/:id/messages` | Get messages |
-| POST | `/api/messages/send` | Send message |
+```env
+VITE_API_URL=http://localhost:4000
+VITE_ZEGO_APP_ID=your_zego_app_id
+VITE_ZEGO_SERVER_SECRET=your_zego_secret
+```
 
-### Tasks
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/tasks` | Create task |
-| GET | `/api/tasks` | Get tasks |
-| PUT | `/api/tasks/:id` | Update task |
-| DELETE | `/api/tasks/:id` | Delete task |
+## Usage
 
-### Reviews
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/reviews` | Create review |
-| GET | `/api/reviews` | Get reviews |
+### Student Flow
+1. Register/Login → Complete profile
+2. Browse mentors on Explore page
+3. Connect with a mentor
+4. Book a session and make payment
+5. Join video session at scheduled time
+6. Complete tasks assigned by mentor
+7. Rate and review the session
 
----
+### Mentor Flow
+1. Register as mentor → Set up profile
+2. Configure availability and hourly rate
+3. Accept connection requests
+4. Conduct video sessions
+5. Assign tasks to mentees
+6. Track earnings and reviews
 
-## 🎨 UI Components
+## API Overview
+
+| Category | Endpoints |
+|----------|-----------|
+| **Auth** | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/google` |
+| **Users** | `GET /api/user/me`, `PUT /api/user/update` |
+| **Mentors** | `GET /api/mentors`, `GET /api/mentors/:id`, `PUT /api/mentors/profile` |
+| **Bookings** | `POST /api/bookings`, `GET /api/bookings`, `POST /api/bookings/:id/join` |
+| **Messages** | `GET /api/messages/conversations`, `POST /api/messages/send` |
+| **Tasks** | `POST /api/tasks`, `GET /api/tasks`, `PUT /api/tasks/:id` |
+| **Reviews** | `POST /api/reviews`, `GET /api/reviews` |
+| **Forum** | `GET /api/forum/questions`, `POST /api/forum/questions` |
+
+## Screenshots
 
 <table>
   <tr>
-    <td align="center">
-      <img src="Frontend/src/assets/mentor.png" alt="Mentor Card" width="150"/>
-      <br/><strong>Mentor Cards</strong>
+    <td align="center" width="50%">
+      <img src="Frontend/src/assets/studentdashbaordimage.png" alt="Student Dashboard"/>
+      <br/><em>Student Dashboard</em>
     </td>
-    <td align="center">
-      <img src="Frontend/src/assets/student.png" alt="Student Profile" width="150"/>
-      <br/><strong>Student Profiles</strong>
+    <td align="center" width="50%">
+      <img src="Frontend/src/assets/connect1.png" alt="Connect with Mentors"/>
+      <br/><em>Connect with Mentors</em>
     </td>
-    <td align="center">
-      <img src="Frontend/src/assets/connect4.png" alt="Connection" width="150"/>
-      <br/><strong>Connections</strong>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="Frontend/src/assets/taskbymentee.png" alt="Task Management"/>
+      <br/><em>Task Management</em>
     </td>
-    <td align="center">
-      <img src="Frontend/src/assets/connect5.png" alt="Features" width="150"/>
-      <br/><strong>Features</strong>
+    <td align="center" width="50%">
+      <img src="Frontend/src/assets/trust.png" alt="Platform Features"/>
+      <br/><em>Platform Features</em>
     </td>
   </tr>
 </table>
 
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit changes: `git commit -m 'Add your feature'`
+4. Push to branch: `git push origin feature/your-feature`
 5. Open a Pull Request
 
----
+## Support
 
-## 📄 License
+- **Issues**: [GitHub Issues](https://github.com/arshchouhan/Ment2Be/issues)
+- **Author**: [Arsh Chauhan](https://github.com/arshchouhan)
 
-This project is licensed under the ISC License.
+## License
 
----
-
-## 👨‍💻 Author
-
-**Arsh Chauhan**
-
-- GitHub: [@arshchouhan](https://github.com/arshchouhan)
-
----
-
-## 🙏 Acknowledgments
-
-- [React](https://reactjs.org/) - UI Library
-- [TailwindCSS](https://tailwindcss.com/) - CSS Framework
-- [ZegoCloud](https://www.zegocloud.com/) - Video SDK
-- [MongoDB](https://www.mongodb.com/) - Database
-- [Socket.IO](https://socket.io/) - Real-time Engine
-- [Cloudinary](https://cloudinary.com/) - Media Management
+This project is licensed under the [ISC License](https://opensource.org/licenses/ISC).
 
 ---
 
 <p align="center">
-  <img src="Frontend/src/assets/logo-hat.png" alt="Ment2Be" width="50"/>
+  <img src="Frontend/src/assets/logo-hat.png" alt="Ment2Be" width="40"/>
   <br/>
-  <strong>Made with ❤️ for the mentorship community</strong>
+  <sub>Built with ❤️ for the mentorship community</sub>
 </p>
