@@ -18,6 +18,26 @@ const priorityBorder = {
   low: "border-l-gray-600",
 };
 
+const getProgressFromStatus = (status, progress) => {
+  if (typeof progress === 'number') {
+    if (status === 'completed') return 100;
+    if (status === 'not-started') return 0;
+    return Math.max(0, Math.min(100, progress));
+  }
+
+  switch (status) {
+    case 'completed':
+      return 100;
+    case 'pending-review':
+      return 80;
+    case 'in-progress':
+      return 50;
+    case 'not-started':
+    default:
+      return 0;
+  }
+};
+
 export function TasksSection({ selectedMentee, onCreateTask }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -126,10 +146,10 @@ export function TasksSection({ selectedMentee, onCreateTask }) {
 
       const data = await response.json();
       
-      // Update local state
+      // Update local state with both status and progress
       setTasks(tasks.map(task => 
         (task._id || task.id) === taskId 
-          ? { ...task, status: 'completed' }
+          ? { ...task, status: 'completed', progress: 100 }
           : task
       ));
       
@@ -312,16 +332,23 @@ export function TasksSection({ selectedMentee, onCreateTask }) {
 
                       {/* Progress Bar */}
                       <div className="mt-3">
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="text-gray-400">Progress</span>
-                          <span className="font-medium text-gray-300">{task.progress}%</span>
-                        </div>
-                        <div className="h-1.5 bg-[#2a3038] rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-white rounded-full transition-all duration-300"
-                            style={{ width: `${task.progress}%` }}
-                          />
-                        </div>
+                        {(() => {
+                          const displayProgress = getProgressFromStatus(task.status, task.progress);
+                          return (
+                            <>
+                              <div className="flex items-center justify-between text-xs mb-1">
+                                <span className="text-gray-400">Progress</span>
+                                <span className="font-medium text-gray-300">{displayProgress}%</span>
+                              </div>
+                              <div className="h-1.5 bg-[#2a3038] rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-white rounded-full transition-all duration-300"
+                                  style={{ width: `${displayProgress}%` }}
+                                />
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
 

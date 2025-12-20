@@ -40,6 +40,73 @@ export async function GetCurrentUser(req, res) {
   }
 }
 
+export async function DeleteCurrentUser(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Lazy imports to avoid circular dependencies / unused imports
+    const [{ default: Review }, { default: Message }, { default: Booking }, { default: Session }, { default: Task }, { default: Connection }, { default: JournalEntry }, { default: JournalNotes }, { default: KarmaPoints }, { default: ForumQuestion }, { default: Availability }] = await Promise.all([
+      import('../models/review.model.js'),
+      import('../models/message.model.js'),
+      import('../models/booking.model.js'),
+      import('../models/Session.model.js'),
+      import('../models/task.model.js'),
+      import('../models/connection.model.js'),
+      import('../models/journalEntry.model.js'),
+      import('../models/journalNotes.model.js'),
+      import('../models/karmaPoints.model.js'),
+      import('../models/forum.model.js'),
+      import('../models/availability.model.js')
+    ]);
+
+    // Cleanup: delete dependent documents where safe.
+    await Promise.all([
+      MentorSkill.deleteMany({ mentor: userId }),
+      MentorProfile.deleteOne({ user: userId }),
+      Availability.deleteMany({ mentor: userId }),
+      Review.deleteMany({ $or: [{ mentor: userId }, { student: userId }] }),
+      Message.deleteMany({ $or: [{ sender: userId }, { receiver: userId }] }),
+      Task.deleteMany({ $or: [{ mentorId: userId }, { menteeId: userId }] }),
+      Connection.deleteMany({ $or: [{ mentor: userId }, { student: userId }] }),
+      Booking.deleteMany({ $or: [{ mentor: userId }, { student: userId }, { cancelledBy: userId }] }),
+      Session.deleteMany({ $or: [{ mentor: userId }, { student: userId }] }),
+      JournalEntry.deleteMany({ studentId: userId }),
+      JournalNotes.deleteMany({ $or: [{ studentId: userId }, { mentorId: userId }] }),
+      KarmaPoints.deleteOne({ user: userId }),
+      ForumQuestion.deleteMany({ author: userId }),
+      ForumQuestion.updateMany({}, { $pull: { upvoters: userId, answers: { author: userId } } })
+    ]);
+
+    await User.deleteOne({ _id: userId });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete current user error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete account'
+    });
+  }
+}
+
 export async function UpdateCurrentUser(req, res) {
   try {
     const userId = req.user.id;

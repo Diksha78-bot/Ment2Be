@@ -22,7 +22,9 @@ const UserSchema = new mongoose.Schema(
     phoneNumber: { type: String, required: false },
     isProfileComplete: { type: Boolean, default: false },
     karmaPoints: { type: Number, default: 0 },
-    connectionsCount: { type: Number, default: 0 }
+    connectionsCount: { type: Number, default: 0 },
+    resetPasswordToken: { type: String, default: null },
+    resetPasswordExpires: { type: Date, default: null }
   },
   { timestamps: true }
 );

@@ -1,7 +1,9 @@
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { OAuth2Client } from 'google-auth-library';
+import { sendPasswordResetEmail, sendWelcomeEmail } from "../services/emailService.js";
 
 const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -41,6 +43,14 @@ export async function Register(req, res) {
 
     if (user) {      
       const token = generateToken(user._id, user.role);
+
+      const frontendUrl = process.env.FRONTEND_URL || req.get('origin') || 'http://localhost:5173';
+      const dashboardPath = user.role === 'mentor' ? '/mentor/dashboard' : '/student/dashboard';
+      const dashboardLink = `${frontendUrl.replace(/\/$/, '')}${dashboardPath}`;
+
+      sendWelcomeEmail(user.email, user.name, user.role, dashboardLink).catch((err) => {
+        console.error('Welcome email error:', err);
+      });
       
       res.status(201).json({
         success: true,
@@ -81,7 +91,7 @@ export async function Login(req, res) {
 
     if (!user) {
       console.log("User not found for email:", normalizedEmail);
-      return res.status(401).json({"success":false,"message":"Invalid email or password"});
+      return res.status(401).json({"success":false,"message":"User not found"});
     }
 
     if (!user.password) {
@@ -145,6 +155,14 @@ export async function GoogleLogin(req, res) {
         googleId,
         role: userRole,
       });
+
+      const frontendUrl = process.env.FRONTEND_URL || req.get('origin') || 'http://localhost:5173';
+      const dashboardPath = userRole === 'mentor' ? '/mentor/dashboard' : '/student/dashboard';
+      const dashboardLink = `${frontendUrl.replace(/\/$/, '')}${dashboardPath}`;
+
+      sendWelcomeEmail(email, name, userRole, dashboardLink).catch((err) => {
+        console.error('Welcome email error:', err);
+      });
     }
 
     const jwtToken = generateToken(user._id, user.role);
@@ -171,4 +189,151 @@ export function Logout(req, res) {
     success: true,
     message: "Logged out successfully"
   });
+}
+
+export async function ForgotPassword(req, res) {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required"
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "No user found with this email"
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000);
+
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpires = resetTokenExpires;
+    await user.save();
+
+    const frontendUrl = process.env.FRONTEND_URL || req.get('origin') || 'http://localhost:5173';
+    const resetLink = `${frontendUrl.replace(/\/$/, '')}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+    await sendPasswordResetEmail(email, resetToken, resetLink);
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset email sent successfully. Please check your email."
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error sending password reset email",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
+
+export async function ResetPassword(req, res) {
+  try {
+    const { token, email, newPassword, confirmPassword } = req.body;
+
+    if (!token || !email || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required"
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match"
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters long"
+      });
+    }
+
+    const resetTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+      resetPasswordToken: resetTokenHash,
+      resetPasswordExpires: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset token"
+      });
+    }
+
+    user.password = newPassword;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successfully. You can now log in with your new password."
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error resetting password",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+}
+
+export async function ValidateResetToken(req, res) {
+  try {
+    const { token, email } = req.query;
+
+    if (!token || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Token and email are required"
+      });
+    }
+
+    const resetTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+      resetPasswordToken: resetTokenHash,
+      resetPasswordExpires: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset token"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Token is valid",
+      email: user.email
+    });
+  } catch (error) {
+    console.error("Validate reset token error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error validating token",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 }

@@ -5,6 +5,21 @@ import Navbar from '../components/StudentDashboard/Navbar';
 import { TaskCard } from '../components/StudentTasks/TaskCard';
 import { fetchStudentTasks } from '../services/studentTasksApi';
 
+const scrollStyles = `
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+`;
+
+if (typeof document !== 'undefined') {
+  const styleTagId = 'student-task-page-no-scrollbar';
+  if (!document.getElementById(styleTagId)) {
+    const styleSheet = document.createElement('style');
+    styleSheet.id = styleTagId;
+    styleSheet.textContent = scrollStyles;
+    document.head.appendChild(styleSheet);
+  }
+}
+
 const StudentTaskPage = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -149,7 +164,7 @@ const StudentTaskPage = () => {
             {showLeftArrow && (
               <button
                 onClick={() => scroll('left')}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-gray-800/80 hover:bg-gray-700 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-gray-800/80 hover:bg-gray-700 rounded-full transition-all"
               >
                 <ChevronLeft className="h-5 w-5 text-white" />
               </button>
@@ -159,7 +174,7 @@ const StudentTaskPage = () => {
             <div
               ref={scrollRef}
               onScroll={handleScroll}
-              className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
+              className="no-scrollbar flex gap-4 overflow-x-auto pb-2 scroll-smooth"
               style={{ scrollBehavior: 'smooth' }}
             >
               {tasks.map((task) => (
@@ -173,7 +188,7 @@ const StudentTaskPage = () => {
             {showRightArrow && (
               <button
                 onClick={() => scroll('right')}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-gray-800/80 hover:bg-gray-700 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-gray-800/80 hover:bg-gray-700 rounded-full transition-all"
               >
                 <ChevronRight className="h-5 w-5 text-white" />
               </button>

@@ -5,6 +5,7 @@ import cors from 'cors';
 // import { env } from './config/env.js';
 import connectDB from './config/db.js';
 import authRouter from './routes/auth.routes.js';
+import phoneAuthRouter from './routes/phoneAuth.routes.js';
 import userRouter from './routes/user.routes.js';
 import skillsRouter from './routes/skills.routes.js';
 import sessionsRouter from './routes/session.routes.js';
@@ -123,6 +124,7 @@ app.get('/api/socket/stats', (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/auth/phone', phoneAuthRouter);
 app.use('/api/user', userRouter);
 app.use('/api/mentors', mentorRouter);
 app.use('/api/mentors/karma', mentorKarmaRouter);

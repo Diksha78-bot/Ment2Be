@@ -3,7 +3,11 @@ import { useState, useEffect } from 'react';
 import './index.css';
 import LandingPageWithLoader from './pages/LandingPageWithLoader';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import StudentDashboard from './pages/StudentDashboard';
+import MentorReviewsPage from './pages/MentorReviewsPage';
+import HelpPage from './pages/HelpPage';
 import MentorDashboard from './pages/MentorDashboard';
 import ExplorePage from './pages/ExplorePage';
 import JournalPage from './pages/JournalPage';
@@ -51,6 +55,9 @@ function App() {
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/help" element={<HelpPage />} />
 
         {/* Student Routes */}
         <Route path="/student/dashboard" element={<StudentDashboard />} />
@@ -79,6 +86,7 @@ function App() {
         <Route path="/mentor/tasks" element={<MentorTasksPage />} />
         <Route path="/mentor/messages" element={<MentorMessagesPage />} />
         <Route path="/mentor/get-mentees" element={<MentorGetMenteesPage />} />
+        <Route path="/mentor/reviews" element={<MentorReviewsPage />} />
         <Route path="/mentor/profile" element={<MentorProfilePage />} />
         <Route path="/mentor/profile-setup" element={<MentorProfileSetup />} />
         <Route path="/mentor/forum" element={<ForumPage />} />

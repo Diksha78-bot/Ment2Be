@@ -5,7 +5,6 @@ const ProfileNavigation = ({ activeTab = 'overview', onTabChange }) => {
     { id: 'overview', label: 'Overview', count: null },
     { id: 'reviews', label: 'Reviews', count: null },
     { id: 'videos', label: 'Videos', count: null },
-    { id: 'sessions', label: 'Group sessions', count: null },
   ];
 
   return (

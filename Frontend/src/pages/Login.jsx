@@ -6,9 +6,10 @@ import RegisterForm from '../components/auth/RegisterForm';
 import ProfileCarousel from '../components/auth/ProfileCarousel';
 import LoadingScreen from '../components/LoadingScreen';
 import { useGoogleOneTapLogin } from '@react-oauth/google';
+import { getApiUrl } from '../config/backendConfig';
 import './Login.css';
 
-const API_URL = "https://k23dx.onrender.com/api" || "http://localhost:4000/api";
+const API_URL = getApiUrl().replace(/\/$/, '');
 
 const Login = () => {
   const navigate = useNavigate();

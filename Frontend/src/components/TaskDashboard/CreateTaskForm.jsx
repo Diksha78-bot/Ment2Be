@@ -1,24 +1,100 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, FileText, Link2, Tag, User, AlertCircle, Upload, CheckCircle2, BookOpen, Code, FolderKanban, SearchIcon, FileCheck, PenTool, FileQuestion } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, FileText, Link2, Tag, User, AlertCircle, Upload, CheckCircle2, BookOpen, Code, FolderKanban, SearchIcon, FileCheck, PenTool, FileQuestion, ChevronDown, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { createTask } from "../../services/createTaskApi";
+import { getApiUrl } from "../../config/backendConfig";
+
+function CustomDropdown({ value, onChange, placeholder, options, disabled = false }) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = React.useRef(null);
+
+  useEffect(() => {
+    const handlePointerDown = (e) => {
+      if (!wrapperRef.current) return;
+      if (!wrapperRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const selected = options.find((o) => o.value === value);
+  const label = selected?.label || '';
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl bg-[#202327] border text-left transition-colors ${
+          disabled
+            ? 'border-gray-800 text-gray-500 cursor-not-allowed'
+            : 'border-gray-700 text-white hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-gray-500'
+        }`}
+      >
+        <span className={label ? 'text-white' : 'text-gray-400'}>{label || placeholder}</span>
+        <ChevronDown className={`h-4 w-4 ${disabled ? 'text-gray-600' : 'text-gray-300'} ${open ? 'rotate-180' : ''} transition-transform`} />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-gray-700 bg-[#121212] shadow-xl">
+          <div className="max-h-64 overflow-auto">
+            {options.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <button
+                  key={String(opt.value)}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                    isSelected
+                      ? 'bg-[#202327] text-white'
+                      : 'text-gray-200 hover:bg-[#202327]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const categories = [
   { value: "coding", label: "Coding Assignment", icon: Code },
-  { value: "reading", label: "Reading Material", icon: BookOpen },
+  { value: "practice", label: "Reading Material", icon: BookOpen },
   { value: "project", label: "Project Work", icon: FolderKanban },
-  { value: "research", label: "Research Task", icon: SearchIcon },
-  { value: "review", label: "Code Review", icon: FileCheck },
+  { value: "project", label: "Research Task", icon: SearchIcon },
+  { value: "coding", label: "Code Review", icon: FileCheck },
   { value: "practice", label: "Practice Exercise", icon: PenTool },
-  { value: "documentation", label: "Documentation", icon: FileText },
-  { value: "other", label: "Other", icon: FileQuestion },
+  { value: "Content Creation", label: "Documentation", icon: FileText },
+  { value: "assignment", label: "Other", icon: FileQuestion },
 ];
 
 export function CreateTaskForm() {
   const navigate = useNavigate();
   const [mentees, setMentees] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedAttachments, setUploadedAttachments] = useState([]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -33,6 +109,65 @@ export function CreateTaskForm() {
     requireSubmission: false,
   });
 
+  const uploadAttachment = async (file) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error('Authentication required');
+
+    const apiUrl = getApiUrl().replace(/\/$/, '');
+    const isVideo = file.type?.startsWith('video/');
+    const isImage = file.type?.startsWith('image/');
+
+    const endpoint = isVideo ? 'video' : isImage ? 'image' : 'file';
+    const fieldName = isVideo ? 'video' : isImage ? 'image' : 'file';
+
+    const form = new FormData();
+    form.append(fieldName, file);
+
+    const res = await fetch(`${apiUrl}/upload/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: form,
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.message || 'Upload failed');
+    }
+
+    return {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: data?.data?.url,
+      publicId: data?.data?.publicId,
+    };
+  };
+
+  const handleAttachmentSelect = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    setIsUploading(true);
+    try {
+      const uploaded = [];
+      for (const file of files) {
+        const result = await uploadAttachment(file);
+        uploaded.push(result);
+      }
+
+      setUploadedAttachments((prev) => [...prev, ...uploaded]);
+      toast.success('File(s) uploaded');
+    } catch (err) {
+      console.error('Attachment upload error:', err);
+      toast.error(err.message || 'Failed to upload file');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
   useEffect(() => {
     fetchMentees();
   }, []);
@@ -42,7 +177,8 @@ export function CreateTaskForm() {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:4000/api/bookings/mentor", {
+      const apiUrl = getApiUrl().replace(/\/$/, '');
+      const response = await fetch(`${apiUrl}/bookings/mentor`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -88,16 +224,41 @@ export function CreateTaskForm() {
     setIsSubmitting(true);
 
     try {
+      const allowedCategories = new Set([
+        'Technical Skills',
+        'Soft Skills',
+        'Career Development',
+        'Content Creation',
+        'coding',
+        'practice',
+        'project',
+        'assignment',
+        ''
+      ]);
+
+      const normalizedCategory = allowedCategories.has(formData.category)
+        ? formData.category
+        : 'Technical Skills';
+
       // Format the data for backend
       const taskData = {
         title: formData.title,
         description: formData.description,
         instructions: formData.instructions,
-        category: formData.category,
+        category: normalizedCategory,
         priority: formData.priority,
         dueDate: new Date(formData.dueDate).toISOString(),
         estimatedTime: formData.estimatedTime,
         resources: formData.resources,
+        attachments: uploadedAttachments.map((a) => a.url).filter(Boolean),
+        attachmentsMeta: uploadedAttachments
+          .filter((a) => a && a.url && a.name)
+          .map((a) => ({
+            name: a.name,
+            size: a.size,
+            type: a.type,
+            url: a.url,
+          })),
         notifyMentee: formData.notifyMentee,
         requireSubmission: formData.requireSubmission,
         menteeId: formData.menteeId,
@@ -130,10 +291,10 @@ export function CreateTaskForm() {
           {/* Left Column - Main Form */}
           <div className="space-y-6 lg:col-span-2">
             {/* Basic Information */}
-            <div className="bg-[#121212] rounded-lg shadow-sm border border-gray-700 p-6">
+            <div className="bg-[#121212] rounded-lg shadow-sm border border-gray-800 p-6">
               <div className="mb-4">
                 <h3 className="flex items-center gap-2 text-lg font-semibold text-white mb-1">
-                  <FileText className="w-5 h-5 text-gray-400" />
+                  <FileText className="w-5 h-5 text-white" />
                   Basic Information
                 </h3>
                 <p className="text-sm text-gray-400">Enter the main details for this task</p>
@@ -149,7 +310,7 @@ export function CreateTaskForm() {
                     placeholder="e.g., Build a REST API with Node.js"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-[#202327] border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-gray-500"
                     required
                   />
                 </div>
@@ -163,7 +324,7 @@ export function CreateTaskForm() {
                     rows={5}
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 bg-[#202327] border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-gray-500 resize-none"
                     required
                   />
                   <p className="text-xs text-gray-400">
@@ -178,17 +339,17 @@ export function CreateTaskForm() {
                     rows={3}
                     value={formData.instructions}
                     onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 bg-[#202327] border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-gray-500 resize-none"
                   />
                 </div>
               </div>
             </div>
 
             {/* Task Category */}
-            <div className="bg-[#121212] rounded-lg shadow-sm border border-gray-700 p-6">
+            <div className="bg-[#121212] rounded-lg shadow-sm border border-gray-800 p-6">
               <div className="mb-4">
                 <h3 className="flex items-center gap-2 text-lg font-semibold text-white mb-1">
-                  <Tag className="w-5 h-5 text-gray-400" />
+                  <Tag className="w-5 h-5 text-white" />
                   Task Category
                 </h3>
                 <p className="text-sm text-gray-400">Select the type of task you are assigning</p>
@@ -200,16 +361,16 @@ export function CreateTaskForm() {
                   const isSelected = formData.category === category.value;
                   return (
                     <button
-                      key={category.value}
+                      key={`${category.value}-${category.label}`}
                       type="button"
                       onClick={() => setFormData({ ...formData, category: category.value })}
                       className={`flex flex-col items-center gap-2 rounded-lg border p-4 transition-all ${
                         isSelected
-                          ? "border-gray-400 bg-gray-800 text-white"
-                          : "border-gray-600 bg-gray-900 text-gray-400 hover:border-gray-500 hover:bg-gray-800"
+                          ? "border-gray-500 bg-[#202327] text-white"
+                          : "border-gray-700 bg-[#1a1a1a] text-gray-300 hover:border-gray-500 hover:bg-[#202327]"
                       }`}
                     >
-                      <Icon className="w-6 h-6" />
+                      <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : 'text-gray-300'}`} />
                       <span className="text-xs font-medium text-center">{category.label}</span>
                     </button>
                   );
@@ -218,10 +379,10 @@ export function CreateTaskForm() {
             </div>
 
             {/* Resources */}
-            <div className="bg-[#121212] rounded-lg shadow-sm border border-gray-700 p-6">
+            <div className="bg-[#121212] rounded-lg shadow-sm border border-gray-800 p-6">
               <div className="mb-4">
                 <h3 className="flex items-center gap-2 text-lg font-semibold text-white mb-1">
-                  <Link2 className="w-5 h-5 text-gray-400" />
+                  <Link2 className="w-5 h-5 text-white" />
                   Resources & Attachments
                 </h3>
                 <p className="text-sm text-gray-400">Add helpful links or upload files for the mentee</p>
@@ -235,19 +396,55 @@ export function CreateTaskForm() {
                     rows={4}
                     value={formData.resources}
                     onChange={(e) => setFormData({ ...formData, resources: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent resize-none font-mono text-sm"
+                    className="w-full px-3 py-2 bg-[#202327] border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-gray-500 resize-none font-mono text-sm"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-300">Attachments</label>
-                  <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-gray-600 bg-gray-900 p-8 transition-colors hover:border-gray-500 hover:bg-gray-800">
-                    <div className="text-center">
-                      <Upload className="mx-auto w-8 h-8 text-gray-500" />
-                      <p className="mt-2 text-sm font-medium text-gray-300">Drop files here or click to upload</p>
-                      <p className="mt-1 text-xs text-gray-400">PDF, DOC, images up to 10MB</p>
+                  <label className="block">
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleAttachmentSelect}
+                      className="hidden"
+                      disabled={isUploading}
+                    />
+                    <div className={`flex items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors ${
+                      isUploading
+                        ? 'border-gray-800 bg-[#0f0f0f] cursor-not-allowed'
+                        : 'border-gray-700 bg-[#1a1a1a] hover:border-gray-500 hover:bg-[#202327] cursor-pointer'
+                    }`}>
+                      <div className="text-center">
+                        <Upload className="mx-auto w-8 h-8 text-gray-300" />
+                        <p className="mt-2 text-sm font-medium text-gray-300">
+                          {isUploading ? 'Uploading...' : 'Click to upload files'}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-400">Images, videos, PDF, DOC (max 100MB)</p>
+                      </div>
                     </div>
-                  </div>
+                  </label>
+
+                  {uploadedAttachments.length > 0 && (
+                    <div className="space-y-2">
+                      {uploadedAttachments.map((att) => (
+                        <div key={`${att.url}-${att.name}`} className="flex items-center justify-between rounded-lg border border-gray-700 bg-[#202327] px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-white">{att.name}</p>
+                            <p className="text-xs text-gray-400">Uploaded</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setUploadedAttachments((prev) => prev.filter((x) => x.url !== att.url))}
+                            className="ml-3 inline-flex items-center justify-center rounded-md p-2 text-gray-300 hover:bg-black/20 hover:text-white"
+                            aria-label="Remove attachment"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -256,31 +453,27 @@ export function CreateTaskForm() {
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Assign Mentee */}
-            <div className="bg-[#121212] rounded-lg shadow-sm border border-gray-700 p-6">
+            <div className="bg-[#121212] rounded-lg shadow-sm border border-gray-800 p-6">
               <div className="mb-4">
                 <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
-                  <User className="w-5 h-5 text-gray-400" />
+                  <User className="w-5 h-5 text-white" />
                   Assign To
                 </h3>
               </div>
 
               <div className="space-y-4">
-                <select
+                <CustomDropdown
                   value={formData.menteeId}
-                  onChange={(e) => setFormData({ ...formData, menteeId: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                  required
-                >
-                  <option value="">Select a mentee</option>
-                  {mentees.map((mentee) => (
-                    <option key={mentee.id} value={mentee.id}>
-                      {mentee.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setFormData({ ...formData, menteeId: v })}
+                  placeholder="Select a mentee"
+                  options={[
+                    { value: '', label: 'Select a mentee' },
+                    ...mentees.map((m) => ({ value: m.id, label: m.name }))
+                  ]}
+                />
 
                 {selectedMentee && (
-                  <div className="flex items-center gap-3 rounded-lg bg-gray-800 p-3">
+                  <div className="flex items-center gap-3 rounded-lg bg-[#202327] border border-gray-700 p-3">
                     <img
                       src={selectedMentee.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedMentee.name)}&background=4a5568&color=fff`}
                       alt={selectedMentee.name}
@@ -299,10 +492,10 @@ export function CreateTaskForm() {
             </div>
 
             {/* Priority & Timeline */}
-            <div className="bg-[#121212] rounded-lg shadow-sm border border-gray-700 p-6">
+            <div className="bg-[#121212] rounded-lg shadow-sm border border-gray-800 p-6">
               <div className="mb-4">
                 <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
-                  <AlertCircle className="w-5 h-5 text-gray-400" />
+                  <AlertCircle className="w-5 h-5 text-white" />
                   Priority & Timeline
                 </h3>
               </div>
@@ -310,17 +503,18 @@ export function CreateTaskForm() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-300">Priority Level</label>
-                  <select
+                  <CustomDropdown
                     value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                  >
-                    <option value="">Select priority</option>
-                    <option value="low">Low Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="high">High Priority</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
+                    onChange={(v) => setFormData({ ...formData, priority: v })}
+                    placeholder="Select priority"
+                    options={[
+                      { value: '', label: 'Select priority' },
+                      { value: 'low', label: 'Low Priority' },
+                      { value: 'medium', label: 'Medium Priority' },
+                      { value: 'high', label: 'High Priority' },
+                      { value: 'urgent', label: 'Urgent' }
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -332,7 +526,7 @@ export function CreateTaskForm() {
                     type="date"
                     value={formData.dueDate}
                     onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-[#202327] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-gray-500"
                     required
                   />
                 </div>
@@ -342,21 +536,22 @@ export function CreateTaskForm() {
                     <Clock className="w-4 h-4" />
                     Estimated Time
                   </label>
-                  <select
+                  <CustomDropdown
                     value={formData.estimatedTime}
-                    onChange={(e) => setFormData({ ...formData, estimatedTime: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                  >
-                    <option value="">Select duration</option>
-                    <option value="30min">30 minutes</option>
-                    <option value="1hr">1 hour</option>
-                    <option value="2hr">2 hours</option>
-                    <option value="4hr">4 hours</option>
-                    <option value="1day">1 day</option>
-                    <option value="2-3days">2-3 days</option>
-                    <option value="1week">1 week</option>
-                    <option value="2weeks">2+ weeks</option>
-                  </select>
+                    onChange={(v) => setFormData({ ...formData, estimatedTime: v })}
+                    placeholder="Select duration"
+                    options={[
+                      { value: '', label: 'Select duration' },
+                      { value: '30min', label: '30 minutes' },
+                      { value: '1hr', label: '1 hour' },
+                      { value: '2hr', label: '2 hours' },
+                      { value: '4hr', label: '4 hours' },
+                      { value: '1day', label: '1 day' },
+                      { value: '2-3days', label: '2-3 days' },
+                      { value: '1week', label: '1 week' },
+                      { value: '2weeks', label: '2+ weeks' }
+                    ]}
+                  />
                 </div>
               </div>
             </div>

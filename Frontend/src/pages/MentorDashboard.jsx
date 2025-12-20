@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MentorNavbar from '../components/MentorDashboard/Navbar';
 import SessionTimer from '../components/SessionTimer';
-import { FiUpload, FiX, FiCalendar, FiUsers, FiClock, FiEdit3, FiSettings, FiLogOut, FiPlus, FiFolder, FiMoreVertical, FiBookOpen, FiTrendingUp, FiUserPlus, FiMessageSquare, FiAward, FiStar } from 'react-icons/fi';
+import { FiUpload, FiX, FiCalendar, FiUsers, FiClock, FiEdit3, FiSettings, FiLogOut, FiPlus, FiFolder, FiMoreVertical, FiBookOpen, FiTrendingUp, FiUserPlus, FiMessageSquare, FiAward, FiStar, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
 import KarmaPointsCard from '../components/KarmaPointsCard/KarmaPointsCard';
 import PageLoader from '../components/PageLoader';
@@ -48,8 +48,10 @@ const MentorDashboard = () => {
   const [timeRefresh, setTimeRefresh] = useState(0); // Force re-render for dynamic time
   const [connectionsCount, setConnectionsCount] = useState(0);
   const [connectionsLoading, setConnectionsLoading] = useState(true);
+  const [saveToast, setSaveToast] = useState({ visible: false, type: 'success', message: '' });
   const fileInputRef = useRef(null);
   const bioRef = useRef(null);
+  const saveToastTimeoutRef = useRef(null);
 
   const PRESET_SKILLS = [
     "System Design",
@@ -565,9 +567,18 @@ const MentorDashboard = () => {
     try {
       await saveProfile({ ...formData, skills });
       setEditing(false);
+      if (saveToastTimeoutRef.current) clearTimeout(saveToastTimeoutRef.current);
+      setSaveToast({ visible: true, type: 'success', message: 'Profile saved successfully' });
+      saveToastTimeoutRef.current = setTimeout(() => {
+        setSaveToast((prev) => ({ ...prev, visible: false }));
+      }, 2500);
     } catch (error) {
       console.error("Error updating profile:", error);
-      // Optionally show an error message to the user
+      if (saveToastTimeoutRef.current) clearTimeout(saveToastTimeoutRef.current);
+      setSaveToast({ visible: true, type: 'error', message: 'Failed to save profile. Please try again.' });
+      saveToastTimeoutRef.current = setTimeout(() => {
+        setSaveToast((prev) => ({ ...prev, visible: false }));
+      }, 3000);
     }
   };
 
@@ -736,55 +747,64 @@ const MentorDashboard = () => {
 
   const primarySkill = skills[0] || profile?.skills?.[0]?.name;
   const skillsList = skills.length > 0 ? skills : profile?.skills || [];
-  const experienceLabel = mentorProfile?.experience
-    ? `${mentorProfile.experience} year$${'{mentorProfile.experience > 1 ? "s" : ""}'}`
-    : "Experience not added";
-
+ 
   return (
     <div className="h-screen bg-[#0a0a0a] text-gray-100 overflow-hidden">
-      {/* Custom Scrollbar Styles */}
+      {saveToast.visible && (
+        <div className="fixed top-6 right-6 z-[9999]">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-600/60 shadow-lg backdrop-blur-sm bg-[#202327]/95 text-gray-100">
+            {saveToast.type === 'success' ? (
+              <FiCheckCircle className="w-5 h-5 text-gray-200" />
+            ) : (
+              <FiAlertCircle className="w-5 h-5 text-gray-200" />
+            )}
+            <span className="text-sm font-medium">{saveToast.message}</span>
+          </div>
+        </div>
+      )}
+
       <style>{`
-        /* Hide scrollbar but keep scrolling functionality */
+        /* Hide scrollbars */
         ::-webkit-scrollbar {
-          width: 0;
-          height: 0;
+          width: 8px;
+          height: 8px;
         }
-        
+
         ::-webkit-scrollbar-track {
           background: transparent;
         }
-        
+
         ::-webkit-scrollbar-thumb {
           background: transparent;
         }
-        
+
         ::-webkit-scrollbar-corner {
           background: transparent;
         }
-        
-        /* Firefox - Hide scrollbar */
+
+        /* Firefox */
         * {
           scrollbar-width: none;
           scrollbar-color: transparent transparent;
         }
-        
+
         /* Remove default arrows from number inputs */
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button {
           -webkit-appearance: none;
           margin: 0;
         }
-        
+
         input[type="number"] {
           -moz-appearance: textfield;
         }
-        
+
         /* Custom scrollbar for specific containers */
         .custom-scroll {
           scrollbar-width: none;
           -ms-overflow-style: none;
         }
-        
+
         .custom-scroll::-webkit-scrollbar {
           display: none;
           width: 0;
@@ -1138,19 +1158,19 @@ const MentorDashboard = () => {
                       {reviews.filter(r => r.review?.startsWith('http')).length > 0 ? (
                         <div className="space-y-4">
                           {reviews.filter(r => r.review?.startsWith('http')).slice(0, 3).map((review) => (
-                            <div key={review._id} className="p-4 bg-gray-800 rounded-lg border border-gray-700">
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex items-center">
-                                  <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center mr-3">
+                            <div key={review._id} className="w-full max-w-xl mx-auto px-3 py-2 bg-[#202327] rounded-md border border-gray-600/60">
+                              <div className="flex items-center justify-between gap-3 mb-2">
+                                <div className="flex items-center min-w-0">
+                                  <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                                     {review.student?.profilePicture ? (
                                       <img src={review.student.profilePicture} alt={review.student?.name} className="w-full h-full rounded-full object-cover" />
                                     ) : (
                                       <span className="text-white font-semibold text-sm">{review.student?.name?.charAt(0) || 'S'}</span>
                                     )}
                                   </div>
-                                  <div>
-                                    <p className="text-white font-medium text-sm">{review.student?.name || 'Anonymous'}</p>
-                                    <p className="text-gray-400 text-xs">{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</p>
+                                  <div className="min-w-0">
+                                    <p className="text-white font-medium text-sm truncate">{review.student?.name || 'Anonymous'}</p>
+                                    <p className="text-gray-400 text-xs truncate">{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</p>
                                   </div>
                                 </div>
                                 {review.rating && (
@@ -1158,16 +1178,21 @@ const MentorDashboard = () => {
                                     {[...Array(5)].map((_, i) => (
                                       <FiStar
                                         key={i}
-                                        className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`}
+                                        className={`w-3.5 h-3.5 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`}
                                       />
                                     ))}
                                   </div>
                                 )}
                               </div>
-                              <div className="bg-gray-700 rounded p-3 text-center">
-                                <p className="text-gray-300 text-xs mb-2">Video Testimonial</p>
-                                <a href={review.review} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-sm font-medium">
-                                  Watch Video →
+                              <div className="bg-[#0f1115] rounded-md px-3 py-2 flex items-center justify-between">
+                                <p className="text-gray-400 text-xs">Video Testimonial</p>
+                                <a
+                                  href={review.review}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-gray-200 hover:text-white text-xs font-medium underline underline-offset-4"
+                                >
+                                  Watch
                                 </a>
                               </div>
                             </div>
@@ -1192,34 +1217,34 @@ const MentorDashboard = () => {
                       {reviews.filter(r => r.rating).length > 0 ? (
                         <div className="space-y-4">
                           {reviews.filter(r => r.rating).slice(0, 3).map((review) => (
-                            <div key={review._id} className="p-4 bg-gray-800 rounded-lg border border-gray-700">
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center">
-                                  <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center mr-3">
+                            <div key={review._id} className="w-full max-w-xl mx-auto px-3 py-2 bg-[#202327] rounded-md border border-gray-600/60">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center min-w-0">
+                                  <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                                     {review.student?.profilePicture ? (
                                       <img src={review.student.profilePicture} alt={review.student?.name} className="w-full h-full rounded-full object-cover" />
                                     ) : (
                                       <span className="text-white font-semibold text-sm">{review.student?.name?.charAt(0) || 'S'}</span>
                                     )}
                                   </div>
-                                  <div>
-                                    <p className="text-white font-medium text-sm">{review.student?.name || 'Anonymous'}</p>
-                                    <p className="text-gray-400 text-xs">{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</p>
+                                  <div className="min-w-0">
+                                    <p className="text-white font-medium text-sm truncate">{review.student?.name || 'Anonymous'}</p>
+                                    <p className="text-gray-400 text-xs truncate">{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</p>
                                   </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-2xl font-bold text-white">{review.rating}</span>
-                                  <span className="text-gray-400 text-sm">/5</span>
-                                </div>
-                                <div className="flex gap-1">
-                                  {[...Array(5)].map((_, i) => (
-                                    <FiStar
-                                      key={i}
-                                      className={`w-5 h-5 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`}
-                                    />
-                                  ))}
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-lg font-bold text-white leading-none">{review.rating}</span>
+                                    <span className="text-gray-400 text-xs">/5</span>
+                                  </div>
+                                  <div className="flex gap-0.5">
+                                    {[...Array(5)].map((_, i) => (
+                                      <FiStar
+                                        key={i}
+                                        className={`w-3.5 h-3.5 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`}
+                                      />
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -1258,26 +1283,26 @@ const MentorDashboard = () => {
                               return (
                                 <div 
                                   key={review._id} 
-                                  className="p-4 bg-gray-800 rounded-lg border border-gray-700 cursor-pointer hover:border-gray-500 transition-colors"
+                                  className="w-full max-w-xl mx-auto px-3 py-2 bg-[#202327] rounded-md border border-gray-600/60 cursor-pointer hover:border-gray-500/70 transition-colors"
                                   onClick={() => setSelectedReview(review)}
                                 >
-                                  <div className="flex items-start justify-between mb-3">
-                                    <div className="flex items-center">
-                                      <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center mr-3">
+                                  <div className="flex items-center justify-between gap-3 mb-2">
+                                    <div className="flex items-center min-w-0">
+                                      <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                                         {review.student?.profilePicture ? (
                                           <img src={review.student.profilePicture} alt={review.student?.name} className="w-full h-full rounded-full object-cover" />
                                         ) : (
                                           <span className="text-white font-semibold text-sm">{review.student?.name?.charAt(0) || 'S'}</span>
                                         )}
                                       </div>
-                                      <div>
-                                        <p className="text-white font-medium text-sm">{review.student?.name || 'Anonymous'}</p>
-                                        <p className="text-gray-400 text-xs">{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</p>
+                                      <div className="min-w-0">
+                                        <p className="text-white font-medium text-sm truncate">{review.student?.name || 'Anonymous'}</p>
+                                        <p className="text-gray-400 text-xs truncate">{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</p>
                                       </div>
                                     </div>
                                   </div>
-                                  <p className="text-gray-300 text-sm">{truncatedText}</p>
-                                  {shouldTruncate && <p className="text-xs text-blue-400 mt-2">Read more...</p>}
+                                  <p className="text-gray-300 text-sm leading-snug">{truncatedText}</p>
+                                  {shouldTruncate && <p className="text-xs text-gray-400 mt-1">Read more...</p>}
                                 </div>
                               );
                             })}
@@ -1376,7 +1401,7 @@ const MentorDashboard = () => {
                     type="text"
                     value={formData.headline}
                     onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-600 rounded-md bg-[#202327] text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Your professional headline"
                   />
                 </div>
@@ -1386,7 +1411,7 @@ const MentorDashboard = () => {
                     type="text"
                     value={formData.company}
                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-600 rounded-md bg-[#202327] text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Current company or organization"
                   />
                 </div>
@@ -1396,7 +1421,7 @@ const MentorDashboard = () => {
                     value={formData.bio}
                     onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     rows={6}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 border border-gray-600 rounded-md bg-[#202327] text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     placeholder="Tell mentees about your background, experience, and what you can help them with..."
                   />
                 </div>
@@ -1406,7 +1431,7 @@ const MentorDashboard = () => {
                     type="number"
                     value={formData.experience}
                     onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-600 rounded-md bg-[#202327] text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Years of experience"
                     min="0"
                   />

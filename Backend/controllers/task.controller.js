@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 // Create a new task
 export const createTask = async (req, res) => {
   try {
-    const { title, description, menteeId, category, priority, dueDate, instructions, estimatedTime, resources, notifyMentee, requireSubmission, attachments } = req.body;
+    const { title, description, menteeId, category, priority, dueDate, instructions, estimatedTime, resources, notifyMentee, requireSubmission, attachments, attachmentsMeta } = req.body;
     // JWT token uses 'id' field, not '_id'
     const mentorId = req.user.id || req.user._id;
 
@@ -39,6 +39,25 @@ export const createTask = async (req, res) => {
       console.error('Error fetching mentor name:', err);
     }
 
+    const normalizedAttachmentsMeta = Array.isArray(attachmentsMeta)
+      ? attachmentsMeta
+          .filter((a) => a && a.url && a.name)
+          .map((a) => ({
+            name: a.name,
+            size: a.size,
+            type: a.type,
+            url: a.url
+          }))
+      : [];
+
+    const normalizedAttachments = Array.isArray(attachments)
+      ? attachments.filter(Boolean)
+      : [];
+
+    const effectiveAttachments = normalizedAttachmentsMeta.length
+      ? normalizedAttachmentsMeta.map((a) => a.url)
+      : normalizedAttachments;
+
     const newTask = new Task({
       title,
       description,
@@ -54,7 +73,8 @@ export const createTask = async (req, res) => {
       resources,
       notifyMentee,
       requireSubmission,
-      attachments,
+      attachments: effectiveAttachments,
+      attachmentsMeta: normalizedAttachmentsMeta,
       status: 'not-started' // Default status - Not Started
     });
 
@@ -237,7 +257,28 @@ export const updateTask = async (req, res) => {
     if (description) task.description = description;
     if (category) task.category = category;
     if (priority) task.priority = priority;
-    if (status) task.status = status;
+    if (status) {
+      task.status = status;
+      // Auto-sync progress based on status if progress not explicitly provided
+      if (progress === undefined) {
+        switch (status) {
+          case 'completed':
+            task.progress = 100;
+            break;
+          case 'pending-review':
+            task.progress = 80;
+            break;
+          case 'in-progress':
+            task.progress = 50;
+            break;
+          case 'not-started':
+            task.progress = 0;
+            break;
+          default:
+            task.progress = 0;
+        }
+      }
+    }
     if (dueDate) task.dueDate = dueDate;
     if (progress !== undefined) task.progress = progress;
     if (instructions) task.instructions = instructions;

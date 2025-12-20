@@ -267,7 +267,13 @@ const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) 
 
 
               <div className="flex justify-between text-sm mt-3">
-                <a href="#" className="text-blue-400 hover:text-blue-300">Forgot password?</a>
+                <button 
+                  type="button"
+                  onClick={() => window.location.href = '/forgot-password'}
+                  className="text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  Forgot password?
+                </button>
               </div>
             </form>
           </div>

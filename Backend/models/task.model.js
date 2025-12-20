@@ -72,6 +72,27 @@ const taskSchema = new mongoose.Schema({
   attachments: [{
     type: String
   }],
+
+  attachmentsMeta: [{
+    name: {
+      type: String,
+      required: true
+    },
+    size: {
+      type: Number
+    },
+    type: {
+      type: String
+    },
+    url: {
+      type: String,
+      required: true
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   
   // Task settings
   notifyMentee: {

@@ -119,3 +119,49 @@ export const uploadImage = async (req, res) => {
     });
   }
 };
+
+export const uploadFile = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file provided'
+      });
+    }
+
+    const file = req.file;
+
+    // Upload to Cloudinary (raw for documents/archives/etc)
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.v2.uploader.upload_stream(
+        {
+          resource_type: 'raw',
+          folder: 'k23dx/attachments'
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+
+      uploadStream.end(file.buffer);
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'File uploaded successfully',
+      data: {
+        url: result.secure_url,
+        publicId: result.public_id,
+        originalFilename: result.original_filename
+      }
+    });
+  } catch (error) {
+    console.error('File upload error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload file',
+      error: error.message
+    });
+  }
+};

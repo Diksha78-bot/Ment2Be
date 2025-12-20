@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, User, FileText, ChevronRight, Plus, Star, X, Upload, File, Trash2, CheckCircle2 } from 'lucide-react';
+import { Calendar, User, FileText, ChevronRight, Plus, Star, X, Upload, File, Trash2, CheckCircle2, Download } from 'lucide-react';
 import { updateTaskStatus } from '../../services/updateTaskApi';
 import { getApiUrl } from '../../config/backendConfig';
 import { toast } from 'react-toastify';
@@ -54,6 +54,26 @@ const priorityConfig = {
   'medium': { label: 'Medium Priority', className: 'text-gray-300' },
   'high': { label: 'High Priority', className: 'text-gray-300' },
   'urgent': { label: 'Urgent Priority', className: 'text-gray-300' },
+};
+
+const isLikelyImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  return /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(url);
+};
+
+const toCloudinaryDownloadUrl = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  if (!/res\.cloudinary\.com\//i.test(url)) return url;
+  // Insert fl_attachment right after the /upload/ segment
+  return url.replace(/\/(image|video|raw)?\/upload\//i, (m) => `${m}fl_attachment/`);
+};
+
+const toCloudinaryDownloadUrlWithName = (url, filename) => {
+  if (!url || typeof url !== 'string') return url;
+  if (!/res\.cloudinary\.com\//i.test(url)) return url;
+  if (!filename || typeof filename !== 'string') return toCloudinaryDownloadUrl(url);
+  const safe = encodeURIComponent(filename);
+  return url.replace(/\/(image|video|raw)?\/upload\//i, (m) => `${m}fl_attachment:${safe}/`);
 };
 
 export function TaskCard({ task, onTaskUpdate }) {
@@ -314,6 +334,56 @@ export function TaskCard({ task, onTaskUpdate }) {
             <div>
               <p className="text-sm text-gray-400 mb-2">Resources</p>
               <p className="text-white bg-gray-900 p-4 rounded-lg">{task.resources}</p>
+            </div>
+          )}
+
+          {/* Mentor Attachments */}
+          {Array.isArray(task.attachments) && task.attachments.length > 0 && (
+            <div>
+              <p className="text-sm text-gray-400 mb-2">Attachments</p>
+              <div className="space-y-3">
+                {task.attachments.map((url, idx) => {
+                  const meta = Array.isArray(task.attachmentsMeta)
+                    ? task.attachmentsMeta.find((a) => a && a.url === url)
+                    : null;
+                  const displayName = meta?.name || url;
+                  return (
+                  <div key={`${url}-${idx}`} className="bg-gray-900 rounded-lg border border-gray-800 p-3">
+                    <div className="flex items-center gap-3">
+                      <File className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm text-gray-200 hover:text-white underline underline-offset-2 truncate flex-1"
+                        title={displayName}
+                      >
+                        {displayName}
+                      </a>
+                      <a
+                        href={toCloudinaryDownloadUrlWithName(url, meta?.name)}
+                        download
+                        className="inline-flex items-center gap-2 rounded-md border border-gray-700 bg-[#202327] px-3 py-1.5 text-xs font-medium text-gray-200 hover:text-white hover:border-gray-500"
+                        title="Download"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Download
+                      </a>
+                    </div>
+                    {isLikelyImageUrl(url) && (
+                      <div className="mt-3">
+                        <img
+                          src={url}
+                          alt="Attachment"
+                          className="max-h-64 w-full rounded-lg border border-gray-800 object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 

@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { uploadVideo, uploadImage } from '../controllers/upload.controller.js';
+import { uploadVideo, uploadImage, uploadFile } from '../controllers/upload.controller.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -19,5 +19,8 @@ router.post('/video', authenticateToken, upload.single('video'), uploadVideo);
 
 // Upload image endpoint
 router.post('/image', authenticateToken, upload.single('image'), uploadImage);
+
+// Upload generic file endpoint (pdf/doc/etc)
+router.post('/file', authenticateToken, upload.single('file'), uploadFile);
 
 export default router;
