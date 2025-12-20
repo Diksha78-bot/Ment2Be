@@ -261,13 +261,21 @@ Ment2Be/
 |:---:|:---:|
 | <img src="Frontend/src/assets/studentdashbaordimage.png" alt="Student Dashboard" width="100%"/> | <img src="Frontend/src/assets/connect1.png" alt="Connect" width="100%"/> |
 
-| Task Management | Student Profile |
+| Task Management | Ask Questions |
 |:---:|:---:|
-| <img src="Frontend/src/assets/taskbymentee.png" alt="Tasks" width="100%"/> | <img src="Frontend/src/assets/student.png" alt="Student" width="100%"/> |
+| <img src="Frontend/src/assets/taskbymentee.png" alt="Tasks" width="100%"/> | <img src="Frontend/src/assets/student.png" alt="Ask Questions" width="100%"/> |
 
-| Student Features | Mentor Profile |
+| Student Features | Live Chat |
 |:---:|:---:|
-| <img src="Frontend/src/assets/student2.png" alt="Student Features" width="100%"/> | <img src="Frontend/src/assets/mentor.png" alt="Mentor" width="100%"/> |
+| <img src="Frontend/src/assets/student2.png" alt="Student Features" width="100%"/> | <img src="Frontend/src/assets/mentor.png" alt="Live Chat" width="100%"/> |
+
+| Screenshot 1 | Screenshot 2 |
+|:---:|:---:|
+| <img src="Frontend/src/assets/s1.png" alt="Screenshot 1" width="100%"/> | <img src="Frontend/src/assets/s2.png" alt="Screenshot 2" width="100%"/> |
+
+| Screenshot 3 |
+|:---:|
+| <img src="Frontend/src/assets/s3.png" alt="Screenshot 3" width="100%"/> |
 
 </div>
 
