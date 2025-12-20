@@ -1,6 +1,11 @@
 <div align="center">
 
-<img src="Frontend/src/assets/logo-hat.png" alt="Ment2Be Logo" width="100"/>
+<a href="#ment2be">
+  <picture>
+    <source media="(prefers-reduced-motion: no-preference)" srcset="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=6366F1&center=true&vCenter=true&width=100&height=100&lines=🎓" />
+    <img src="Frontend/src/assets/logo-hat.png" alt="Ment2Be Logo" width="100"/>
+  </picture>
+</a>
 
 # Ment2Be
 
@@ -23,7 +28,7 @@
 
 <br/>
 
-<img src="Frontend/src/assets/MentorDahboard.png" alt="Ment2Be Dashboard" width="90%" style="border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"/>
+<img src="Frontend/src/assets/first.png" alt="Ment2Be Dashboard" width="90%" style="border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"/>
 
 <br/>
 
