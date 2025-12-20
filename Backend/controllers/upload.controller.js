@@ -28,23 +28,15 @@ export const uploadVideo = async (req, res) => {
       });
     }
 
-    // Upload to Cloudinary
-    const result = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.v2.uploader.upload_stream(
-        {
-          resource_type: 'video',
-          folder: 'k23dx/reviews',
-          quality: 'auto',
-          fetch_format: 'auto'
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-
-      uploadStream.end(file.buffer);
-    });
+    // Upload to Cloudinary using upload_large for videos over 100MB
+    const result = await cloudinary.v2.uploader.upload_large(
+      `data:video/${file.mimetype.split('/')[1]};base64,${file.buffer.toString('base64')}`,
+      {
+        resource_type: 'video',
+        folder: 'k23dx/reviews',
+        chunk_size: 6000000 // 6MB chunks
+      }
+    );
 
     res.status(200).json({
       success: true,

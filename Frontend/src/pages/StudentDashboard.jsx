@@ -94,6 +94,7 @@ const UserDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [upcomingSessions, setUpcomingSessions] = useState([]);
+  const [completedSessions, setCompletedSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [mentors, setMentors] = useState([]);
   const [mentorsLoading, setMentorsLoading] = useState(true);
@@ -342,27 +343,27 @@ const UserDashboard = () => {
       console.log('Bookings API Response:', data);
 
       if (response.ok && data.success && data.bookings) {
-        // Filter for UPCOMING sessions (not completed, future date)
         const now = new Date();
+        
+        // Filter for UPCOMING sessions (not completed, future date)
         const upcomingSessions = data.bookings.filter(booking => {
           const sessionDate = new Date(booking.sessionDate);
           return booking.status !== 'completed' && sessionDate >= now;
         }).sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
 
+        // Filter for COMPLETED sessions (completed status OR past date)
+        const completedSessions = data.bookings.filter(booking => {
+          const sessionDate = new Date(booking.sessionDate);
+          return booking.status === 'completed' || sessionDate < now;
+        }).sort((a, b) => new Date(b.sessionDate) - new Date(a.sessionDate));
+
         console.log('Filtered upcoming bookings:', upcomingSessions);
+        console.log('Filtered completed bookings:', completedSessions);
 
         // Map booking to session format with mentor data
-        const sessionsWithMentor = upcomingSessions.map(booking => {
-          // Get mentor data - prefer populated mentor object
+        const mapBookingToSession = (booking) => {
           const mentorData = booking.mentor || booking.mentorId || {};
           const mentorId = mentorData._id || mentorData.id || booking.mentorId;
-          
-          console.log('Mentor data for session:', {
-            mentorId,
-            mentorName: mentorData.name,
-            profilePicture: mentorData.profilePicture,
-            mentorProfile: mentorData.mentorProfile
-          });
           
           return {
             _id: booking._id,
@@ -381,17 +382,19 @@ const UserDashboard = () => {
             startTime: booking.sessionDate,
             status: booking.status
           };
-        });
+        };
 
-        console.log('Sessions with mentor:', sessionsWithMentor);
-        setUpcomingSessions(sessionsWithMentor.slice(0, 1)); // Show only next 1 session
+        setUpcomingSessions(upcomingSessions.map(mapBookingToSession).slice(0, 1));
+        setCompletedSessions(completedSessions.map(mapBookingToSession).slice(0, 2));
       } else {
         console.log('No bookings found or invalid response');
         setUpcomingSessions([]);
+        setCompletedSessions([]);
       }
     } catch (err) {
       console.error('Error fetching sessions:', err);
       setUpcomingSessions([]);
+      setCompletedSessions([]);
     } finally {
       setSessionsLoading(false);
     }
@@ -426,8 +429,12 @@ const UserDashboard = () => {
         
         console.log(' Conversations found:', conversations.length); // Debug log
         
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const currentUserId = currentUser._id || currentUser.id;
+
         const messages = conversations
           .filter(conv => conv.lastMessage)
+          .filter(conv => conv.lastSender !== currentUserId) // Only show messages from mentors
           .map(conv => {
             return {
               _id: conv.conversationId || Math.random(),
@@ -508,6 +515,31 @@ const UserDashboard = () => {
     } finally {
       setTasksLoading(false);
     }
+  };
+
+  // Helper functions to check if session already has submissions
+  const hasRatingForSession = (sessionId) => {
+    return submittedReviews.some(review => 
+      (review.booking === sessionId || review.session === sessionId || 
+       review.booking?._id === sessionId || review.session?._id === sessionId) && 
+      review.rating && !review.review
+    );
+  };
+
+  const hasVideoForSession = (sessionId) => {
+    return submittedReviews.some(review => 
+      (review.booking === sessionId || review.session === sessionId || 
+       review.booking?._id === sessionId || review.session?._id === sessionId) && 
+      review.review && review.review.startsWith('http')
+    );
+  };
+
+  const hasReviewForSession = (sessionId) => {
+    return submittedReviews.some(review => 
+      (review.booking === sessionId || review.session === sessionId || 
+       review.booking?._id === sessionId || review.session?._id === sessionId) && 
+      review.review && !review.review.startsWith('http')
+    );
   };
 
   const fetchSubmittedReviews = async () => {
@@ -1121,9 +1153,9 @@ const UserDashboard = () => {
 
                   {rateTab === 'rate' ? (
                     /* Rate Mentor Tab */
-                    upcomingSessions.length > 0 ? (
+                    completedSessions.length > 0 ? (
                       <div className="space-y-3">
-                        {upcomingSessions.slice(0, 2).map((session) => (
+                        {completedSessions.slice(0, 2).map((session) => (
                           <div key={session._id} className="p-3 bg-[#202327] rounded-lg hover:bg-[#2a2d32] transition-colors">
                             <div className="flex items-center space-x-2 mb-2">
                               <div className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 overflow-hidden">
@@ -1139,41 +1171,97 @@ const UserDashboard = () => {
                             <div className="grid grid-cols-3 gap-2">
                               <button 
                                 onClick={() => {
-                                  setSelectedSession(session);
-                                  setRateModalOpen(true);
+                                  if (!hasRatingForSession(session._id)) {
+                                    setSelectedSession(session);
+                                    setRateModalOpen(true);
+                                  }
                                 }}
-                                className="px-2 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs font-medium transition-colors flex items-center justify-center"
+                                disabled={hasRatingForSession(session._id)}
+                                className={`px-2 py-1.5 rounded text-xs font-medium transition-colors flex items-center justify-center ${
+                                  hasRatingForSession(session._id) 
+                                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                                    : 'bg-gray-600 hover:bg-gray-700 text-white'
+                                }`}
+                                title={hasRatingForSession(session._id) ? 'Already rated' : 'Rate this session'}
                               >
-                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                Rate
+                                {hasRatingForSession(session._id) ? (
+                                  <>
+                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Done
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                    </svg>
+                                    Rate
+                                  </>
+                                )}
                               </button>
                               <button 
                                 onClick={() => {
-                                  setSelectedSession(session);
-                                  setVideoModalOpen(true);
+                                  if (!hasVideoForSession(session._id)) {
+                                    setSelectedSession(session);
+                                    setVideoModalOpen(true);
+                                  }
                                 }}
-                                className="px-2 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs font-medium transition-colors flex items-center justify-center"
+                                disabled={hasVideoForSession(session._id)}
+                                className={`px-2 py-1.5 rounded text-xs font-medium transition-colors flex items-center justify-center ${
+                                  hasVideoForSession(session._id) 
+                                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                                    : 'bg-gray-600 hover:bg-gray-700 text-white'
+                                }`}
+                                title={hasVideoForSession(session._id) ? 'Already uploaded' : 'Upload video'}
                               >
-                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Video
+                                {hasVideoForSession(session._id) ? (
+                                  <>
+                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Done
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Video
+                                  </>
+                                )}
                               </button>
                               <button 
                                 onClick={() => {
-                                  setSelectedSession(session);
-                                  setReviewModalOpen(true);
+                                  if (!hasReviewForSession(session._id)) {
+                                    setSelectedSession(session);
+                                    setReviewModalOpen(true);
+                                  }
                                 }}
-                                className="px-2 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs font-medium transition-colors flex items-center justify-center"
+                                disabled={hasReviewForSession(session._id)}
+                                className={`px-2 py-1.5 rounded text-xs font-medium transition-colors flex items-center justify-center ${
+                                  hasReviewForSession(session._id) 
+                                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                                    : 'bg-gray-600 hover:bg-gray-700 text-white'
+                                }`}
+                                title={hasReviewForSession(session._id) ? 'Already reviewed' : 'Write a review'}
                               >
-                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                                </svg>
-                                Review
+                                {hasReviewForSession(session._id) ? (
+                                  <>
+                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Done
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                    </svg>
+                                    Review
+                                  </>
+                                )}
                               </button>
                             </div>
                           </div>

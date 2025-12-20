@@ -1,13 +1,21 @@
 import React, { useState, useRef } from 'react';
 
+const API_URL = 'https://k23dx.onrender.com' || 'http://localhost:4000';
+
 const VideoUploadModal = ({ isOpen, onClose, sessionId, bookingId, mentorName }) => {
   const [videoFile, setVideoFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('video/')) {
+      // Check file size (max 50MB for reliable Cloudinary uploads)
+      if (file.size > 50 * 1024 * 1024) {
+        alert('Video file size must be less than 50MB');
+        return;
+      }
       setVideoFile(file);
     } else {
       alert('Please select a valid video file');
@@ -21,12 +29,16 @@ const VideoUploadModal = ({ isOpen, onClose, sessionId, bookingId, mentorName })
     }
 
     setLoading(true);
+    setUploadProgress(0);
     try {
       const formData = new FormData();
       formData.append('video', videoFile);
 
       const token = localStorage.getItem('token');
-      const uploadResponse = await fetch('http://localhost:4000/api/upload/video', {
+      
+      // Upload video to Cloudinary
+      setUploadProgress(10);
+      const uploadResponse = await fetch(`${API_URL}/api/upload/video`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -34,13 +46,19 @@ const VideoUploadModal = ({ isOpen, onClose, sessionId, bookingId, mentorName })
         body: formData,
       });
 
+      setUploadProgress(60);
       const uploadData = await uploadResponse.json();
-      if (!uploadData.success) {
-        alert('Video upload failed');
-        return;
+      
+      console.log('Upload Response Status:', uploadResponse.status);
+      console.log('Upload Response Data:', uploadData);
+      
+      if (!uploadResponse.ok || !uploadData.success) {
+        throw new Error(uploadData.message || `Upload failed with status ${uploadResponse.status}`);
       }
 
-      const reviewResponse = await fetch('http://localhost:4000/api/reviews', {
+      // Submit review with video URL
+      setUploadProgress(80);
+      const reviewResponse = await fetch(`${API_URL}/api/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,15 +73,20 @@ const VideoUploadModal = ({ isOpen, onClose, sessionId, bookingId, mentorName })
       });
 
       const reviewData = await reviewResponse.json();
+      setUploadProgress(100);
+      
       if (reviewData.success) {
         alert('Video uploaded successfully!');
         setVideoFile(null);
+        setUploadProgress(0);
         onClose();
       } else {
-        alert('Error: ' + reviewData.message);
+        throw new Error(reviewData.message || 'Failed to submit review');
       }
     } catch (error) {
+      console.error('Video upload error:', error);
       alert('Error: ' + error.message);
+      setUploadProgress(0);
     } finally {
       setLoading(false);
     }
@@ -91,7 +114,7 @@ const VideoUploadModal = ({ isOpen, onClose, sessionId, bookingId, mentorName })
           ) : (
             <div>
               <p className="text-gray-400">Click to upload video</p>
-              <p className="text-xs text-gray-500 mt-1">Max 100MB</p>
+              <p className="text-xs text-gray-500 mt-1">Max 50MB</p>
             </div>
           )}
         </div>
@@ -104,19 +127,65 @@ const VideoUploadModal = ({ isOpen, onClose, sessionId, bookingId, mentorName })
           className="hidden"
         />
 
+        {/* Enhanced Progress Bar */}
+        {loading && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span className="text-sm font-medium text-white">
+                  {uploadProgress < 60 ? 'Uploading video...' : 
+                   uploadProgress < 80 ? 'Processing video...' : 
+                   'Almost done...'}
+                </span>
+              </div>
+              <span className="text-sm font-semibold text-green-400">{uploadProgress}%</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
+              <div 
+                className="h-full rounded-full transition-all duration-500 ease-out"
+                style={{ 
+                  width: `${uploadProgress}%`,
+                  background: 'linear-gradient(90deg, #10b981, #34d399, #6ee7b7)',
+                  boxShadow: '0 0 10px rgba(16, 185, 129, 0.5)'
+                }}
+              ></div>
+            </div>
+            {videoFile && (
+              <p className="text-xs text-gray-400 mt-2">
+                {videoFile.name} • {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
+            disabled={loading}
+            className="flex-1 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading || !videoFile}
-            className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            {loading ? 'Uploading...' : 'Upload'}
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Uploading...
+              </>
+            ) : (
+              'Upload'
+            )}
           </button>
         </div>
       </div>
