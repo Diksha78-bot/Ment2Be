@@ -12,6 +12,8 @@
 
 **A modern mentorship platform that bridges the gap between aspiring students and industry experts**
 
+> ⚠️ **IMPORTANT NOTICE:** The backend is hosted on **free-tier services** (Render) which may experience **downtime, slow response times, or complete unavailability**. For the best experience and reliability, please **clone this repository and configure it locally** as described in the [Quick Start](#-quick-start) section below.
+
 [![Visit Site](https://img.shields.io/badge/🌐_Visit_Site-ment2be.arshchouhan.me-6366F1?style=for-the-badge&logo=googlechrome&logoColor=white)](https://ment2be.arshchouhan.me)
 [![Live Demo](https://img.shields.io/badge/▶_Live_Demo-Watch_Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/HM1EFZ8p1kQ)
 [![GitHub Stars](https://img.shields.io/github/stars/arshchouhan/Ment2Be?style=for-the-badge&logo=github)](https://github.com/arshchouhan/Ment2Be)
