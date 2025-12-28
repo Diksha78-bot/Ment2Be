@@ -45,7 +45,7 @@ function App() {
   return (
     <>
       <ToastContainer position="top-center" autoClose={4000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover theme="dark" />
-      {/* ✅ key forces rerender on every navigation */}
+      {/*key forces rerender on every navigation */}
       <Routes location={location} key={location.key}>
         {/* Root redirect */}
         <Route path="/" element={<LandingPageWithLoader />} />
