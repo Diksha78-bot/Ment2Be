@@ -533,11 +533,17 @@ const MentorMenteesPage = () => {
     const filteredBookings = bookings.filter(booking => booking.status !== 'cancelled');
     
     filteredBookings.forEach(booking => {
+        // Skip bookings with missing student data
+        if (!booking.student || !booking.student._id) {
+          console.warn('Skipping booking with missing student data:', booking._id);
+          return;
+        }
+        
         const studentId = booking.student._id;
         
         if (!studentSessionsMap.has(studentId)) {
           // Calculate session stats for this student across all their bookings
-          const studentBookings = bookings.filter(b => b.student._id === studentId);
+          const studentBookings = bookings.filter(b => b.student && b.student._id === studentId);
           const totalSessions = studentBookings.length;
           const completedSessions = studentBookings.filter(b => b.status === 'completed').length;
           const totalHours = studentBookings
@@ -596,6 +602,12 @@ const MentorMenteesPage = () => {
     const menteesMap = new Map();
     
     bookings.forEach(booking => {
+      // Skip bookings with missing student data
+      if (!booking.student || !booking.student._id) {
+        console.warn('Skipping booking with missing student data:', booking._id);
+        return;
+      }
+      
       const studentId = booking.student._id;
       if (!menteesMap.has(studentId)) {
         menteesMap.set(studentId, {

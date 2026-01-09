@@ -289,11 +289,12 @@ const MentorDashboard = () => {
       if (response.ok && data.success && data.data) {
         // Process mentees from connections, sorted by connection date
         const menteesArray = data.data
+          .filter(connection => connection.student) // Filter out null/undefined students
           .map(connection => ({
             ...connection.student,
             lastConnection: connection.connectedAt,
             sessions: [],
-            skills: connection.student.skills || ['General Mentoring']
+            skills: connection.student?.skills || ['General Mentoring'] // Optional chaining for safety
           }))
           .sort((a, b) => new Date(b.lastConnection) - new Date(a.lastConnection))
           .slice(0, 2); // Show only 2 most recent connections
