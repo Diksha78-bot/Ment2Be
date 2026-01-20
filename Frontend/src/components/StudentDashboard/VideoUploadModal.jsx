@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 
-const API_URL = 'https://k23dx.onrender.com' || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || (import.meta.env.PROD ? 'https://k23dx.onrender.com' : 'http://localhost:4000');
 
 const VideoUploadModal = ({ isOpen, onClose, sessionId, bookingId, mentorName }) => {
   const [videoFile, setVideoFile] = useState(null);

@@ -35,7 +35,7 @@ const ExplorePage = () => {
         const token = localStorage.getItem("token");
         
         // Build query params
-        let url = 'https://k23dx.onrender.com/api/mentors' || 'http://localhost:4000/api/mentors';
+        let url = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/mentors` : (import.meta.env.PROD ? 'https://k23dx.onrender.com/api/mentors' : 'http://localhost:4000/api/mentors');
         if (activeCategory !== 'All Mentors') {
           url += `?skill=${activeCategory}`;
         }

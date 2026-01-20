@@ -22,7 +22,7 @@ const StudentConnectedMentors = () => {
         return;
       }
 
-      const response = await fetch('https://k23dx.onrender.com/api/connections/my-connections?status=connected' || 'http://localhost:4000/api/connections/my-connections?status=connected', {
+      const response = await fetch(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/connections/my-connections?status=connected` : (import.meta.env.PROD ? 'https://k23dx.onrender.com/api/connections/my-connections?status=connected' : 'http://localhost:4000/api/connections/my-connections?status=connected'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

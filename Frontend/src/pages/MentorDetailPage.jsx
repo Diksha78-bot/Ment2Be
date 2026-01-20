@@ -41,7 +41,8 @@ const MentorDetailPage = () => {
         setError(null);
 
         // Fetch mentor by ID directly
-        const response = await fetch(`${'https://k23dx.onrender.com' || 'http://localhost:4000'}/api/mentors/${mentorId}`, {
+        const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || (import.meta.env.PROD ? 'https://k23dx.onrender.com' : 'http://localhost:4000');
+        const response = await fetch(`${baseUrl}/api/mentors/${mentorId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

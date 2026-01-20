@@ -9,7 +9,7 @@ const ProfileCompletionPage = () => {
   const handleComplete = async (formData) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('https://k23dx.onrender.com/api/user/profile' || 'http://localhost:4000/api/user/profile', {
+      const response = await fetch(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/user/profile` : (import.meta.env.PROD ? 'https://k23dx.onrender.com/api/user/profile' : 'http://localhost:4000/api/user/profile'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

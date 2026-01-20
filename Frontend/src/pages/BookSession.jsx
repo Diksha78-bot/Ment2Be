@@ -48,7 +48,7 @@ const BookSession = () => {
 
       try {
         setLoading(true);
-        const response = await fetch('https://k23dx.onrender.com/api/mentors' || 'http://localhost:4000/api/mentors', {
+        const response = await fetch(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/mentors` : (import.meta.env.PROD ? 'https://k23dx.onrender.com/api/mentors' : 'http://localhost:4000/api/mentors'), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -275,7 +275,7 @@ const BookSession = () => {
         studentNotes: formData.studentNotes
       };
 
-      const response = await fetch('https://k23dx.onrender.com/api/bookings' || 'http://localhost:4000/api/bookings', {
+      const response = await fetch(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/bookings` : (import.meta.env.PROD ? 'https://k23dx.onrender.com/api/bookings' : 'http://localhost:4000/api/bookings'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

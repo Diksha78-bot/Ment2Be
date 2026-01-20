@@ -4,7 +4,8 @@
  */
 
 // Switch between 'nodejs', 'java', or 'render'
-const ACTIVE_BACKEND = 'nodejs';
+// Auto-detect: use 'render' in production, 'nodejs' in development
+const ACTIVE_BACKEND = import.meta.env.VITE_BACKEND || (import.meta.env.PROD ? 'render' : 'nodejs');
 
 const BACKEND_URLS = {
   nodejs: 'http://localhost:4000',

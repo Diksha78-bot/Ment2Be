@@ -26,7 +26,7 @@ const ConnectedStudents = () => {
       setError(null);
       const token = localStorage.getItem('token');
 
-      const response = await fetch('https://k23dx.onrender.com/api/connections/mentor-connections?status=connected' || 'http://localhost:4000/api/connections/mentor-connections?status=connected', {
+      const response = await fetch(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/connections/mentor-connections?status=connected` : (import.meta.env.PROD ? 'https://k23dx.onrender.com/api/connections/mentor-connections?status=connected' : 'http://localhost:4000/api/connections/mentor-connections?status=connected'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

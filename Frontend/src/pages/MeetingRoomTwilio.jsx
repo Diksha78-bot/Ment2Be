@@ -61,7 +61,7 @@ const MeetingRoom = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('https://k23dx.onrender.com/api/twilio/token' || 'http://localhost:4000/api/twilio/token', {
+      const response = await fetch(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/twilio/token` : (import.meta.env.PROD ? 'https://k23dx.onrender.com/api/twilio/token' : 'http://localhost:4000/api/twilio/token'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

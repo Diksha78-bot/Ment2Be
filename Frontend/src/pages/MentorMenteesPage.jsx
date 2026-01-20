@@ -29,7 +29,7 @@ const MentorMenteesPage = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('https://k23dx.onrender.com/api/bookings/mentor' || 'http://localhost:4000/api/bookings/mentor', {
+      const response = await fetch(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/bookings/mentor` : (import.meta.env.PROD ? 'https://k23dx.onrender.com/api/bookings/mentor' : 'http://localhost:4000/api/bookings/mentor'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -409,7 +409,8 @@ const MentorMenteesPage = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:4000/api/bookings/${session._id}/confirm`, {
+      const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || (import.meta.env.PROD ? 'https://k23dx.onrender.com' : 'http://localhost:4000');
+      const response = await fetch(`${baseUrl}/api/bookings/${session._id}/confirm`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -439,7 +440,8 @@ const MentorMenteesPage = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:4000/api/bookings/${session._id}/reject`, {
+      const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || (import.meta.env.PROD ? 'https://k23dx.onrender.com' : 'http://localhost:4000');
+      const response = await fetch(`${baseUrl}/api/bookings/${session._id}/reject`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
