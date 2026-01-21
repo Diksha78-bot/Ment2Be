@@ -39,6 +39,7 @@ import ContactUsPage from './pages/ContactUsPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import TermsOfService from "./pages/TermsOfService";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   const location = useLocation();
@@ -102,6 +103,7 @@ function App() {
         {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <ScrollToTop />
     </>
   );
 }
