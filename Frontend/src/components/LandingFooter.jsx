@@ -182,7 +182,7 @@ const LandingFooter = () => {
               <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">
                 Privacy Policy
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">
+              <a href="/terms-of-service" className="text-gray-400 hover:text-white transition-colors text-sm">
                 Terms of Service
               </a>
               <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">

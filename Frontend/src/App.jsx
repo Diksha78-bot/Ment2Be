@@ -38,6 +38,7 @@ import SolutionsPage from './pages/SolutionsPage';
 import ContactUsPage from './pages/ContactUsPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import TermsOfService from "./pages/TermsOfService";
 
 function App() {
   const location = useLocation();
@@ -58,6 +59,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/help" element={<HelpPage />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
 
         {/* Student Routes */}
         <Route path="/student/dashboard" element={<StudentDashboard />} />
