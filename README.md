@@ -15,6 +15,25 @@
 
 ---
 
+
+## 📚 Table of Contents
+
+- [📸 Platform Showcase](#-platform-showcase)
+- [✨ Features](#-features)
+- [🛠️ Tech Stack](#️-tech-stack)
+- [🚀 Getting Started](#-getting-started)
+- [📁 Project Structure](#-project-structure)
+- [🔌 API Endpoints](#-api-endpoints)
+- [🎨 Key Features Explained](#-key-features-explained)
+- [🔧 Configuration](#-configuration)
+- [🧪 Testing](#-testing)
+- [🧯 Common Setup Errors & Fixes](#-common-setup-errors--fixes)
+- [🚢 Deployment](#-deployment)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+
+---
+
 ## 📸 Platform Showcase
 
 <div align="center">
@@ -424,6 +443,75 @@ npm run build
 cd Backend
 # Set environment variables on hosting platform
 npm start
+```
+
+---
+
+## 🧯 Common Setup Errors & Fixes
+
+This section helps contributors quickly diagnose common issues encountered during local setup.
+
+### 🔴 Backend server not starting
+**Cause:**
+- Missing or incorrect `.env` values in `Backend/.env`
+
+**Fix:**
+- Ensure all required variables (like `MONGO_URI`, `JWT_SECRET`) are defined
+- Restart server after updating env:
+```bash
+npm run dev
+```
+
+---
+
+### 🔴 Frontend cannot connect to backend
+**Cause:**
+- `VITE_API_URL` in `Frontend/.env.local` is incorrect
+
+**Fix:**
+- Make sure it matches backend port:
+```env
+VITE_API_URL=http://localhost:4000/api
+```
+
+---
+
+### 🔴 MongoDB connection error
+**Cause:**
+- MongoDB not running locally
+
+**Fix:**
+- Start MongoDB service:
+```bash
+mongod
+```
+
+---
+
+### 🔴 Port already in use
+**Cause:**
+- Another process using port `4000` or `5173`
+
+**Fix:**
+- Change port in `.env`
+```env
+PORT=5000
+```
+- Or kill existing process:
+```bash
+npx kill-port 4000
+```
+
+---
+
+### 🔴 Build or install errors
+**Cause:**
+- Old Node.js version
+
+**Fix:**
+- Ensure Node.js ≥ 18:
+```bash
+node -v
 ```
 
 ---
