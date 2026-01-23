@@ -32,6 +32,7 @@ import contactRouter from './routes/contact.routes.js';
 
 import dotenv from "dotenv"
 import { validateEnv } from './config/env.js';
+import errorMiddleware from './middleware/error.middleware.js';
 
 dotenv.config()
 validateEnv();
@@ -124,64 +125,8 @@ app.use('/api/connections', connectionRouter); // Mentor connections endpoints
 app.use('/api/journal', journalRouter); // Journal entries and notes endpoints
 app.use('/api/contact', contactRouter); // Contact form email endpoint
 
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found',
-    path: req.originalUrl
-  });
-});
-
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      success: false,
-      message: 'Validation error',
-      errors: Object.values(err.errors).map(e => e.message)
-    });
-  }
-
-  if (err.name === 'CastError') {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid ID format'
-    });
-  }
-
-  if (err.code === 11000) {
-    return res.status(400).json({
-      success: false,
-      message: 'Duplicate field value',
-      field: Object.keys(err.keyPattern)[0]
-    });
-  }
-
-  if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid token'
-    });
-  }
-
-  if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      success: false,
-      message: 'Token expired'
-    });
-  }
-
-  if (res.headersSent) {
-    return next(err);
-  }
-
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
+// Global error handling middleware (must be last)
+app.use(errorMiddleware);
 
 const startServer = async () => {
   try {
