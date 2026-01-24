@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import logoHat from "../assets/logo-hat.png";
 
 const LandingNavbar = () => {
+  const [isOpen, setIsOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showSocialsModal, setShowSocialsModal] = useState(false);
 
@@ -229,6 +230,13 @@ const LandingNavbar = () => {
               Contact Us
             </Link>
           </div>
+          {/* Hamburger Button (Mobile Only) */}
+          <button
+            className="md:hidden text-white text-2xl"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            ☰
+          </button>
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4">
@@ -266,6 +274,81 @@ const LandingNavbar = () => {
           </div>
         </div>
       </div>
+      {/* Mobile Menu */}
+      {isOpen && (
+        <div className="md:hidden bg-[#0a0a0a] px-6 pb-4 space-y-4 border-t border-gray-800 text-gray-300">
+          {/* FEATURES SECTION */}
+          <div>
+            <p className="text-white font-semibold mb-2">Features</p>
+            <button
+              onClick={() => {
+                scrollToSection("dashboard-section");
+                setIsOpen(false);
+              }}
+              className="block w-full text-left py-2"
+            >
+              Personal Dashboard
+            </button>
+
+            <button
+              onClick={() => {
+                scrollToSection("connect-mentors-section");
+                setIsOpen(false);
+              }}
+              className="block w-full text-left py-2"
+            >
+              Connect with Mentors
+            </button>
+          </div>
+
+          {/* SOLUTIONS SECTION */}
+          <div>
+            <p className="text-white font-semibold mb-2">Solutions</p>
+            <Link
+              to="/solutions"
+              onClick={() => setIsOpen(false)}
+              className="block py-2"
+            >
+              For Students
+            </Link>
+            <Link
+              to="/solutions"
+              onClick={() => setIsOpen(false)}
+              className="block py-2"
+            >
+              For Mentors
+            </Link>
+          </div>
+
+          {/* OTHER LINKS */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection("footer");
+              setIsOpen(false);
+            }}
+            className="block w-full text-left py-2"
+          >
+            Our Socials
+          </button>
+
+          <Link
+            to="/contact-us"
+            onClick={() => setIsOpen(false)}
+            className="block py-2"
+          >
+            Contact Us
+          </Link>
+
+          <Link
+            to="/login"
+            onClick={() => setIsOpen(false)}
+            className="block py-2"
+          >
+            Log in
+          </Link>
+        </div>
+      )}
     </nav>
   );
 };
