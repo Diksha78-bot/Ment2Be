@@ -40,6 +40,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import TermsOfService from "./pages/TermsOfService";
 import ScrollToTop from "./components/ScrollToTop";
+import MentorAnalyticsPage from './pages/MentorAnalyticsPage';
 
 function App() {
   const location = useLocation();
@@ -96,6 +97,7 @@ function App() {
         <Route path="/mentor/forum/question/:questionId" element={<QuestionDetailPage />} />
         <Route path="/mentor/journal" element={<MentorJournalPage />} />
         <Route path="/mentor/students" element={<ConnectedStudents />} />
+        <Route path="/mentor/analytics" element={<MentorAnalyticsPage />} />
 
         {/* Testing Route */}
         <Route path="/karma-test" element={<KarmaTest />} />
