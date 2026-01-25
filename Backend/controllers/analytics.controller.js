@@ -7,7 +7,7 @@ import { generateMentorReport } from '../services/reportingService.js';
 
 export const getMentorAnalytics = async (req, res) => {
     try {
-        const mentorId = req.user.id || req.user._id;
+        const mentorId = req.user.userId || req.user.id || req.user._id;
         const { timeframe = 'last30days' } = req.query;
 
         let startDate = new Date();
@@ -35,7 +35,7 @@ export const getMentorAnalytics = async (req, res) => {
                         month: { $month: "$sessionDate" },
                         day: { $dayOfMonth: "$sessionDate" }
                     },
-                    dailyEarnings: { $sum: "$amount" },
+                    dailyEarnings: { $sum: "$price" },
                     sessionCount: { $sum: 1 }
                 }
             },
@@ -82,7 +82,7 @@ export const getMentorAnalytics = async (req, res) => {
             {
                 $group: {
                     _id: null,
-                    totalEarnings: { $sum: "$amount" },
+                    totalEarnings: { $sum: "$price" },
                     totalSessions: { $sum: 1 }
                 }
             }
@@ -117,13 +117,13 @@ export const getMentorAnalytics = async (req, res) => {
 
 export const exportAnalyticsReport = async (req, res) => {
     try {
-        const mentorId = req.user.id || req.user._id;
+        const mentorId = req.user.userId || req.user.id || req.user._id;
         const user = await User.findById(mentorId);
 
         // Fetch snapshot of data for the report
         const overallStats = await Booking.aggregate([
             { $match: { mentor: new mongoose.Types.ObjectId(mentorId), status: 'completed' } },
-            { $group: { _id: null, totalEarnings: { $sum: "$amount" }, totalSessions: { $sum: 1 } } }
+            { $group: { _id: null, totalEarnings: { $sum: "$price" }, totalSessions: { $sum: 1 } } }
         ]);
 
         const recentSessions = await Booking.find({
