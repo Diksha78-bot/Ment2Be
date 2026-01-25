@@ -40,6 +40,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import TermsOfService from "./pages/TermsOfService";
 import ScrollToTop from "./components/ScrollToTop";
+import MentorAnalyticsPage from './pages/MentorAnalyticsPage';
 
 function App() {
   const location = useLocation();
@@ -47,6 +48,7 @@ function App() {
   return (
     <>
       <ToastContainer position="top-center" autoClose={4000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover theme="dark" />
+      <AchievementNotifier />
       {/*key forces rerender on every navigation */}
       <Routes location={location} key={location.key}>
         {/* Root redirect */}
@@ -96,9 +98,11 @@ function App() {
         <Route path="/mentor/forum/question/:questionId" element={<QuestionDetailPage />} />
         <Route path="/mentor/journal" element={<MentorJournalPage />} />
         <Route path="/mentor/students" element={<ConnectedStudents />} />
+        <Route path="/mentor/analytics" element={<MentorAnalyticsPage />} />
 
         {/* Testing Route */}
         <Route path="/karma-test" element={<KarmaTest />} />
+        <Route path="/achievements" element={<AchievementGalleryPage />} />
 
         {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />
