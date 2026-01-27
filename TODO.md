@@ -1,25 +1,27 @@
-# Advanced Mentor Search and Filtering Implementation
+# Real-time Notification System Implementation
 
 ## Backend Changes
-- [ ] Add location field to MentorProfile model
-- [ ] Enhance GetAllMentors API to support advanced filters:
-  - [ ] skills (array for multiple skills)
-  - [ ] minRating filter
-  - [ ] availability filter
-  - [ ] location filter
-  - [ ] experience sorting option
+- [ ] Create notification model (Backend/models/notification.model.js)
+- [ ] Create notification controller (Backend/controllers/notification.controller.js)
+- [ ] Create notification routes (Backend/routes/notifications.routes.js)
+- [ ] Extend email service with notification email templates
+- [ ] Update booking controller to send notifications on status changes
+- [ ] Update message controller to send notifications for unread messages
+- [ ] Integrate notifications with Socket.IO handlers
 
 ## Frontend Changes
-- [ ] Add advanced filter UI components to ExplorePage:
-  - [ ] Skills multi-select dropdown
-  - [ ] Rating range slider
-  - [ ] Price range inputs
-  - [ ] Availability checkboxes
-  - [ ] Location input field
-- [ ] Add comprehensive sorting dropdown
-- [ ] Update API calls with filter parameters
+- [ ] Create notification context/provider for state management
+- [ ] Create notification components (NotificationCenter, NotificationItem, NotificationToast)
+- [ ] Add notification permission request on app load
+- [ ] Update booking/message flows to show notifications
+- [ ] Add notification center to dashboard
 
-## Testing & Optimization
-- [ ] Test all filter combinations
-- [ ] Add database indexing for performance
-- [ ] Verify frontend-backend integration
+## Integration & Testing
+- [ ] Connect Socket.IO events for real-time notifications
+- [ ] Add browser push notifications using Notification API
+- [ ] Add email notifications for important events
+- [ ] Test notification creation on booking status changes
+- [ ] Test real-time notifications via Socket.IO
+- [ ] Test browser push notifications
+- [ ] Test email notifications
+- [ ] Add notification preferences/settings
